@@ -57,14 +57,14 @@ function AppHomePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-full items-center justify-center bg-gray-50 py-12">
         <div className="text-gray-600">Loading projects...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       <div className="mx-auto max-w-6xl p-6">
         {/* Header */}
         <div className="mb-8">
