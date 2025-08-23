@@ -39,7 +39,7 @@ export async function deployToVm(
     if (targetPath === ".env.local" && content) {
       content = content.replace(
         "VITE_CONVEX_URL=http://127.0.0.1:3210",
-        `VITE_CONVEX_URL=https://${vmId}.vm.freestyle.sh/convex`,
+        `VITE_CONVEX_URL=https://${vmId}.vm.freestyle.sh`,
       );
     }
 
@@ -55,7 +55,6 @@ export async function deployToVm(
     listen 3000;
     server_name _;
 
-    # Frontend proxy
     location / {
         proxy_pass http://localhost:5173;
 
@@ -78,9 +77,8 @@ export async function deployToVm(
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Convex backend proxy (trailing slash auto-strips /convex/)
-    location /convex/ {
-        proxy_pass http://localhost:3210/;
+    location /api/ {
+        proxy_pass http://localhost:3210/api/;
 
         absolute_redirect off;
         chunked_transfer_encoding off;
@@ -115,7 +113,7 @@ export async function deployToVm(
   );
   await execAwait(vmId, "nginx -s reload || nginx");
 
-  await execAwait(vmId, "cd /app && pnpm install");
+  await execAwait(vmId, "cd /app && pnpm install && pnpm convex codegen");
   // Run pnpm dev inside a detached screen session to provide TTY
   await execAwait(
     vmId,
