@@ -177,7 +177,29 @@ export const sendChatMessage = baseProcedure
 
           let deploymentSuccessful = false;
           try {
-            const deployResult = await deployToVm(input.projectId, vfs);
+            // Deploy with event handler that immediately pushes events
+            const deployResult = await deployToVm(
+              input.projectId,
+              vfs,
+              async (message) => {
+                // Push each deployment event immediately
+                agentEvents.push({
+                  eventType: "toolResult",
+                  markdown: message,
+                  timestamp: Date.now(),
+                  agent: "chat",
+                });
+
+                // Update database immediately with new event
+                await db.project.update({
+                  where: { id: input.projectId },
+                  data: {
+                    agentEvents: JSON.stringify(agentEvents),
+                  },
+                });
+              },
+            );
+
             deploymentSuccessful = true;
 
             agentEvents.push({
