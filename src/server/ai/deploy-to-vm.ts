@@ -39,7 +39,10 @@ export async function deployToVm(
   }
 
   await execAwait(vmId, script);
-  await execAwait(vmId, "cd /app && npm i -g pnpm && pnpm install");
+  await execAwait(
+    vmId,
+    "cd /app && apt update && apt install --yes socat && npm i -g pnpm && pnpm install",
+  );
   await execAwait(vmId, "cd /app && CONVEX_AGENT_MODE=anonymous pnpm dev &");
   await execAwait(vmId, "socat TCP-LISTEN:3000,fork TCP:localhost:5173 &");
 
