@@ -33,6 +33,6 @@ export const execAwait = async (vmId: string, command: string) => {
 export const setupVm = async (vmId: string) => {
   await execAwait(
     vmId,
-    "apt update && apt install --yes socat && npm i -g pnpm",
+    "apt update && apt install --yes socat && npm i -g pnpm && socat TCP-LISTEN:3000,fork TCP:localhost:5173 &",
   );
 };
