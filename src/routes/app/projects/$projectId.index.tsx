@@ -229,7 +229,7 @@ function ProjectDetailPage() {
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         <ChatInterface
-          messages={chatData?.messages ?? []}
+          events={chatData?.events ?? []}
           isProcessing={chatData?.isProcessing ?? false}
           onSendMessage={handleSendMessage}
           onClearChat={handleClearChat}

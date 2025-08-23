@@ -2,7 +2,6 @@ import { generateText, ModelMessage, stepCountIs } from "ai";
 import { z } from "zod";
 import * as vfs from "~/server/utils/vfs";
 import { CLAUDE_CONFIG } from "./constants";
-import { stripXmlTags } from "~/server/utils/strip-xml";
 
 interface AgentContext {
   projectVfs: vfs.VFS;
@@ -88,18 +87,7 @@ ${context.projectFiles.map((f) => `- ${f}`).join("\n")}
     },
     onStepFinish(stepResult) {
       for (const message of stepResult.response.messages) {
-        // Strip XML tags from assistant messages before saving
-        if (
-          message.role === "assistant" &&
-          typeof message.content === "string"
-        ) {
-          messages.push({
-            ...message,
-            content: stripXmlTags(message.content),
-          });
-        } else {
-          messages.push(message);
-        }
+        messages.push(message);
       }
       context.onStateUpdate?.();
     },

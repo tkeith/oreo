@@ -1,18 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { MessageSquareIcon, SendIcon, Trash2Icon } from "lucide-react";
-import { ModelMessage } from "ai";
 import { ChatMessage } from "./chat-message";
-import type { ExtendedModelMessage } from "~/types/chat";
+import type { ChatEvent } from "~/types/chat";
 
 interface ChatInterfaceProps {
-  messages: ModelMessage[];
+  events: ChatEvent[];
   isProcessing?: boolean;
   onSendMessage?: (message: string) => void;
   onClearChat?: () => void;
 }
 
 export function ChatInterface({
-  messages,
+  events,
   isProcessing,
   onSendMessage,
   onClearChat,
@@ -20,10 +19,10 @@ export function ChatInterface({
   const [chatMessage, setChatMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new events arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [events]);
 
   const handleSendMessage = () => {
     if (chatMessage.trim() && !isProcessing) {
@@ -40,7 +39,7 @@ export function ChatInterface({
           <MessageSquareIcon className="mr-2 h-4 w-4 text-gray-600" />
           <h2 className="text-base font-semibold text-gray-900">Chat</h2>
         </div>
-        {messages.length > 0 && onClearChat && (
+        {events.length > 0 && onClearChat && (
           <button
             onClick={onClearChat}
             disabled={isProcessing}
@@ -59,7 +58,7 @@ export function ChatInterface({
       {/* Chat Messages Area */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-4">
-          {messages.length === 0 ? (
+          {events.length === 0 ? (
             <div className="flex items-start space-x-2">
               <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100">
                 <span className="text-xs font-medium text-indigo-600">AI</span>
@@ -74,14 +73,9 @@ export function ChatInterface({
               </div>
             </div>
           ) : (
-            messages
-              .filter((msg) => msg.role !== "system") // Don't show system messages by default
-              .map((msg, idx) => {
-                const extMsg = msg as unknown as ExtendedModelMessage;
-                return (
-                  <ChatMessage key={extMsg.id || `msg-${idx}`} message={msg} />
-                );
-              })
+            events.map((event, idx) => (
+              <ChatMessage key={`event-${idx}`} event={event} />
+            ))
           )}
           {isProcessing && (
             <div className="flex items-center space-x-2 text-gray-500">
