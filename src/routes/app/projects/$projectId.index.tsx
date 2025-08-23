@@ -262,7 +262,6 @@ function ProjectDetailPage() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onBack={handleBack}
-        onDownload={handleDownload}
       />
 
       {/* Main Content */}
@@ -288,6 +287,7 @@ function ProjectDetailPage() {
               onSelectFile={handleSelectFile}
               onCreateFile={handleOpenCreateFile}
               onUpdateFile={handleUpdateFile}
+              onDownload={handleDownload}
             />
           )}
         </div>
