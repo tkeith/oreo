@@ -31,6 +31,8 @@ export const execAwait = async (vmId: string, command: string) => {
 };
 
 export const setupVm = async (vmId: string) => {
-  await execAwait(vmId, "apt update && apt install --yes socat");
-  await execAwait(vmId, "npm i -g pnpm");
+  await execAwait(
+    vmId,
+    "apt update && apt install --yes socat && npm i -g pnpm",
+  );
 };

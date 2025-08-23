@@ -10,14 +10,31 @@ export function Footer({ className = "" }: FooterProps) {
       <div className="mx-auto max-w-6xl px-6">
         <div className="flex flex-col items-center justify-between space-y-4 sm:flex-row sm:space-y-0">
           <div className="text-sm text-gray-500">
-            Built at the YC Agents Hackathon by @tsrkeith and @rileyshu_rs
+            Built at the YC Agents Hackathon by{" "}
+            <a
+              href="https://x.com/tsrkeith"
+              className="text-gray-500 hover:text-gray-900"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              @tsrkeith
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://x.com/rileyshu_rs"
+              className="text-gray-500 hover:text-gray-900"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              @rileyshu_rs
+            </a>
           </div>
           <nav className="flex items-center space-x-6">
             <a
               href="mailto:trevor@codapt.ai"
               className="text-sm text-gray-500 transition-colors hover:text-gray-900"
             >
-              Email us
+              {/* Footer right side text */}
             </a>
           </nav>
         </div>
