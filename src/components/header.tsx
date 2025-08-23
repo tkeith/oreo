@@ -31,7 +31,11 @@ export function Header() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="flex h-20 items-center justify-between">
           <div className="flex items-center">
-            <span className="text-2xl font-bold text-gray-900">Oreo</span>
+            <img
+              src="/oreo-logo-text.png"
+              alt="Oreo"
+              className="h-10 w-auto object-contain"
+            />
           </div>
 
           <div className="flex items-center gap-4">

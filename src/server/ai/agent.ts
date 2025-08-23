@@ -1,18 +1,13 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { generateText, stepCountIs } from "ai";
+import { generateText, ModelMessage, stepCountIs } from "ai";
 import { z } from "zod";
 import * as vfs from "~/server/utils/vfs";
 import { CLAUDE_CONFIG } from "./constants";
 
-export interface ChatMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
-}
-
 interface AgentContext {
   projectVfs: vfs.VFS;
   projectFiles: string[];
-  chatHistory: ChatMessage[];
+  messages: ModelMessage[];
+  onStateUpdate?: () => void;
 }
 
 export async function runAgent(
@@ -21,23 +16,28 @@ export async function runAgent(
 ): Promise<{ response: string }> {
   const workingVfs = context.projectVfs;
 
-  // Build messages array with system prompt, chat history, and new message
-  const messages: ChatMessage[] = [
-    {
+  const messages = context.messages;
+
+  if (messages.length === 0) {
+    messages.push({
       role: "system",
       content: `You are a helpful AI assistant for a code project. You can read and write files in the project.
 
-Current project files:
-${context.projectFiles.map((f) => `- ${f}`).join("\n")}
-
 When asked to make changes, be helpful and make the requested modifications to the files.`,
-    },
-    ...context.chatHistory, // Include the chat history
-    {
-      role: "user",
-      content: message,
-    },
-  ];
+    });
+  }
+
+  messages.push({
+    role: "user",
+    content:
+      message +
+      `\n\n
+<additional-context>
+<current-files-in-project>
+${context.projectFiles.map((f) => `- ${f}`).join("\n")}
+</current-files-in-project>
+</additional-context>`,
+  });
 
   const result = await generateText({
     ...CLAUDE_CONFIG,
@@ -82,6 +82,12 @@ When asked to make changes, be helpful and make the requested modifications to t
           return files.join("\n");
         },
       },
+    },
+    onStepFinish(stepResult) {
+      for (const message of stepResult.response.messages) {
+        messages.push(message);
+      }
+      context.onStateUpdate?.();
     },
   });
 

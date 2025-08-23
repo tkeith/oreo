@@ -42,7 +42,11 @@ function LoginPage() {
       <div className="w-full max-w-md">
         <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
           <div className="mb-8 text-center">
-            <h1 className="mb-2 text-4xl font-bold text-gray-900">Oreo</h1>
+            <img
+              src="/oreo-logo.png"
+              alt="Oreo"
+              className="mx-auto mb-4 h-20 w-auto object-contain"
+            />
             <p className="text-gray-600">Sign in to continue</p>
           </div>
 

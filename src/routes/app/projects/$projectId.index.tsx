@@ -107,10 +107,8 @@ function ProjectDetailPage() {
           ...prev,
           { role: "assistant", content: data.response },
         ]);
-        if (data.filesModified) {
-          void refetchFiles();
-          void refetchFileContent();
-        }
+        void refetchFiles();
+        void refetchFileContent();
         setIsChatLoading(false);
       },
       onError: (error) => {

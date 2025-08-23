@@ -12,8 +12,17 @@ function LandingPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="text-center">
-        <h1 className="mb-6 text-5xl font-bold text-gray-900">Hello World!</h1>
-        <p className="mb-8 text-xl text-gray-600">Welcome to Oreo</p>
+        <img
+          src="/oreo-logo.png"
+          alt="Oreo"
+          className="mx-auto mb-6 h-24 w-auto object-contain"
+        />
+        <h1 className="mb-6 text-5xl font-bold text-gray-900">
+          Welcome to Oreo
+        </h1>
+        <p className="mb-8 text-xl text-gray-600">
+          Your AI-powered coding assistant
+        </p>
         <button
           onClick={() =>
             void navigate({ to: isAuthenticated ? "/app" : "/login" })
