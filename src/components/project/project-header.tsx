@@ -1,4 +1,9 @@
-import { ArrowLeftIcon, EyeIcon, FolderTreeIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  EyeIcon,
+  FolderTreeIcon,
+  DownloadIcon,
+} from "lucide-react";
 
 export type ViewMode = "preview" | "filesystem";
 
@@ -8,6 +13,7 @@ interface ProjectHeaderProps {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   onBack: () => void;
+  onDownload: () => void;
 }
 
 export function ProjectHeader({
@@ -16,6 +22,7 @@ export function ProjectHeader({
   viewMode,
   onViewModeChange,
   onBack,
+  onDownload,
 }: ProjectHeaderProps) {
   return (
     <header className="flex-shrink-0 border-b border-gray-200 bg-white">
@@ -38,30 +45,41 @@ export function ProjectHeader({
           </div>
         </div>
 
-        {/* View Mode Toggle */}
-        <div className="flex items-center rounded-lg bg-gray-100 p-1">
+        <div className="flex items-center space-x-2">
+          {/* Download Button */}
           <button
-            onClick={() => onViewModeChange("preview")}
-            className={`flex items-center space-x-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              viewMode === "preview"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
+            onClick={onDownload}
+            className="flex items-center space-x-2 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200 hover:text-gray-900"
           >
-            <EyeIcon className="h-4 w-4" />
-            <span>Preview</span>
+            <DownloadIcon className="h-4 w-4" />
+            <span>Download</span>
           </button>
-          <button
-            onClick={() => onViewModeChange("filesystem")}
-            className={`flex items-center space-x-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              viewMode === "filesystem"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <FolderTreeIcon className="h-4 w-4" />
-            <span>Files</span>
-          </button>
+
+          {/* View Mode Toggle */}
+          <div className="flex items-center rounded-lg bg-gray-100 p-1">
+            <button
+              onClick={() => onViewModeChange("preview")}
+              className={`flex items-center space-x-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === "preview"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <EyeIcon className="h-4 w-4" />
+              <span>Preview</span>
+            </button>
+            <button
+              onClick={() => onViewModeChange("filesystem")}
+              className={`flex items-center space-x-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === "filesystem"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <FolderTreeIcon className="h-4 w-4" />
+              <span>Files</span>
+            </button>
+          </div>
         </div>
       </div>
     </header>

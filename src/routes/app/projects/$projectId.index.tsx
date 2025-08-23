@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { ArrowLeftIcon } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
@@ -22,6 +22,7 @@ function ProjectDetailPage() {
   const navigate = useNavigate();
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const token = useAuthStore((state) => state.token);
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -184,6 +185,40 @@ function ProjectDetailPage() {
     }
   };
 
+  const handleDownload = () => {
+    void (async () => {
+      try {
+        const result = await queryClient.fetchQuery(
+          trpc.projects.downloadVfsZip.queryOptions({
+            token: token ?? "",
+            projectId,
+          }),
+        );
+
+        // Convert base64 to blob and trigger download
+        const byteCharacters = atob(result.base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: "application/zip" });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${result.projectName}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("Failed to download VFS:", error);
+        alert("Failed to download project files");
+      }
+    })();
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -227,6 +262,7 @@ function ProjectDetailPage() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onBack={handleBack}
+        onDownload={handleDownload}
       />
 
       {/* Main Content */}
