@@ -21,7 +21,8 @@ export async function runCodeGenerator(
     },
     {
       role: "user",
-      content: "Ensure the code matches the spec.",
+      content:
+        "The spec has been updated. Make sure the code matches the spec.",
     },
   ];
 

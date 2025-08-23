@@ -77,18 +77,14 @@ ${filteredFiles.length > 0 ? filteredFiles.map((f) => `- ${f}`).join("\n") : "No
       ...createVFSTools(workingVfs, allowedPrefixes),
       runCodeGenerator: {
         description:
-          "Run the code generator agent to generate code based on an instruction",
-        inputSchema: z.object({
-          instruction: z
-            .string()
-            .describe("The instruction for the code generator"),
-        }),
-        execute: async ({ instruction }: { instruction: string }) => {
+          "Run the code generator agent to update code based on the spec",
+        inputSchema: z.object({}),
+        execute: async () => {
           // Emit an event when code generation starts
           const timestamp = Date.now();
           const startEvent: ChatEvent = {
             eventType: "toolCall",
-            markdown: `**runCodeGenerator**\n\`\`\`json\n${JSON.stringify({ instruction }, null, 2)}\n\`\`\``,
+            markdown: `**runCodeGenerator**`,
             timestamp,
             agent: "chat",
           };

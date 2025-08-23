@@ -25,20 +25,17 @@ const MAX_CACHE_CONTROL_BLOCKS = 4;
  * @param messages - The messages to update
  * @returns Updated messages with proper cache control
  */
-export function updateMessagesForCaching(
-  messages: ModelMessage[],
-): ModelMessage[] {
+export function updateMessagesForCaching(messages: ModelMessage[]): void {
   if (messages.length === 0) {
-    return messages;
+    return;
   }
 
-  // Deep clone messages to avoid mutations
-  const updatedMessages = structuredClone(messages);
+  const updatedMessages = messages;
 
   // Add cache control to the last message/content block
   const lastMessage = updatedMessages[updatedMessages.length - 1];
   if (!lastMessage) {
-    return updatedMessages;
+    return;
   }
 
   // Add cache control to the last block
@@ -87,8 +84,6 @@ export function updateMessagesForCaching(
     const blocksToRemove = cacheControlBlocks - MAX_CACHE_CONTROL_BLOCKS;
     removeCacheControlFromEarliestBlocks(updatedMessages, blocksToRemove);
   }
-
-  return updatedMessages;
 }
 
 /**
