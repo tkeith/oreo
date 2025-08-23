@@ -65,14 +65,14 @@ export async function deployToVm(
     console.log(`DEBUG: handling targetPath: ${targetPath}`);
 
     if (targetPath.includes(".env") && content) {
-      console.log(`DEBUG: replacing VITE_CONVEX_URL in ${targetPath}`);
+      console.log(`DEBUG: replacing VITE_REAL_CONVEX_URL in ${targetPath}`);
       content = content.replace(
-        "VITE_CONVEX_URL=http://127.0.0.1:3210",
-        `VITE_CONVEX_URL=https://${vmId}.vm.freestyle.sh`,
+        "VITE_REAL_CONVEX_URL=http://127.0.0.1:3210",
+        `VITE_REAL_CONVEX_URL=https://${vmId}.vm.freestyle.sh`,
       );
       console.log(`DEBUG: new content: ${content}`);
     } else {
-      console.log(`DEBUG: not replacing VITE_CONVEX_URL in ${targetPath}`);
+      console.log(`DEBUG: not replacing VITE_REAL_CONVEX_URL in ${targetPath}`);
     }
 
     const dir = targetPath.substring(0, targetPath.lastIndexOf("/"));
