@@ -1,0 +1,192 @@
+# Project Guidelines and Patterns
+
+## Tech Stack
+
+- Full-stack TypeScript application
+- TanStack Router (NOT Next.js)
+- React
+- tRPC
+- Prisma ORM with PostgreSQL
+- Tailwind CSS with @tailwindcss/forms
+- HeadlessUI (@headlessui/react)
+- Zod for validation
+- Docker & Docker Compose
+- Zustand with persist middleware for state management
+- Lucide React for icons
+- Google OAuth for authentication
+- JWT for session management
+
+## Import Aliases
+
+- ALWAYS use `~/...` imports over relative imports
+- `~/...` maps to `src/...`
+
+## File Organization
+
+### Server Code
+
+- Keep server-specific code in `src/server`
+- NEVER import files from `src/server` in client-side code
+- Each tRPC procedure should be in its own file in `src/server/trpc/procedures/`
+- Routers go in `src/server/trpc/routers/`
+- Make sure to use `createTRPCRouter` when creating new routers (see other examples in the code)
+
+### Routes
+
+- Use file-based routing with TanStack Router
+- When creating pages, ALWAYS include "index.tsx" in the filename to avoid route conflicts
+  - Use `some-page.index.tsx` or `some-page/index.tsx`, NOT `some-page.tsx`
+- Put non-route components in `src/components/`
+
+### Schemas
+
+- All Zod schemas go in `src/schemas/`
+- Use schemas to validate and parse all external data (API responses, form inputs, etc.)
+
+## Authentication Pattern
+
+- JWT-based authentication (stateless, no sessions table needed)
+- Store ONLY the token in Zustand/localStorage, not user data
+- Fetch user data from server when needed using the token
+- No server-side logout needed (just clear token client-side)
+- Simple authentication checks in components using useEffect, NOT beforeLoad hooks
+
+## State Management (Zustand)
+
+### Correct Pattern
+
+```typescript
+// Store setup with proper type annotation (note the double parentheses)
+export const useStore = create<StoreType>()(
+  persist(
+    (set, get) => ({
+      // state and actions
+    }),
+    {
+      name: "storage-key",
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
+
+// Computed values as custom hooks (NOT in the store)
+export const useComputedValue = () => {
+  return useStore((state) => /* compute from state */);
+};
+```
+
+### Don'ts
+
+- DON'T put computed values as functions in the store
+- DON'T store user data alongside auth token (keep concerns separated)
+
+## tRPC Usage
+
+### Correct Client Pattern
+
+```typescript
+import { useTRPC } from "~/trpc/react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+
+function Component() {
+  const trpc = useTRPC();
+
+  // For queries
+  const queryResult = useQuery(
+    trpc.procedure.queryOptions(
+      {
+        /* input */
+      },
+      {
+        /* tanstack query options like enabled */
+      },
+    ),
+  );
+
+  // For mutations
+  const mutation = useMutation(
+    trpc.procedure.mutationOptions({
+      onSuccess: (data) => {
+        /* handle success */
+      },
+      onError: (error) => {
+        /* handle error */
+      },
+    }),
+  );
+}
+```
+
+### Server Patterns
+
+- Use `baseProcedure` from `~/server/trpc/main` (NOT publicProcedure)
+- Use `verifyToken(token)` from `~/server/auth` for authentication
+- Use `db` from `~/server/db` for database access (NOT prisma directly)
+- NEVER use headers with tRPC
+- Pass all data (including auth tokens) as parameters
+- AVOID tRPC middleware - use helper functions in procedures instead
+- Each procedure in its own file for better organization
+
+## React Patterns
+
+### Navigation
+
+- Always use `void` operator with navigate to handle promises:
+  ```typescript
+  void navigate({ to: "/path" });
+  ```
+
+### Component Simplicity
+
+- AVOID fancy loader features (beforeLoad, defer, suspense boundaries)
+- Handle loading states directly in components
+- Use simple useEffect for redirects and side effects
+- Focus on functionality over optimization initially
+- Don't worry about waterfall loading patterns
+
+## Running the app and managing the database
+
+- Database pushes & migrations happen automatically in our CI pipeline, don't try to run or generate these manually, just modify the schema
+- The app will be automatically run by our CI system, don't try to run it yourself
+- DO NOT try to run `pnpm prisma db push`, `pnpm run dev`, or anything similar
+
+## Code Style
+
+### General
+
+- Break up large pages into smaller components in separate files
+- Use Tailwind CSS without custom styles wherever possible (but when we're trying to use code snippets that are heavy on custom/inline styles, feel free to use them)
+- Focus on good design using your own judgment
+- Take two passes: functionality first, then design improvements
+
+### TypeScript
+
+- Use proper TypeScript types everywhere
+- Follow ESLint rules strictly
+- Handle all promises (await, .then/.catch, or void operator)
+- NEVER use `any` - use `unknown` instead
+- AVOID type assertions (`as`) unless absolutely necessary
+- AVOID `@ts-ignore`, `@ts-expect-error`, or ESLint disable comments
+- When converting from `unknown` to known types, use Zod schemas for validation
+- Performance overhead from Zod parsing is acceptable - prioritize type safety
+
+## Environment Variables
+
+- Server env vars are validated in `src/server/env.ts` using Zod
+- Client-side: use tRPC endpoints to fetch public config (don't expose env vars)
+
+## Development Workflow
+
+- Run with Docker: `./scripts/run`
+- Database changes: `pnpm prisma db push`
+- Type generation: happens automatically via postinstall
+- Check code after changes: `pnpm i && pnpm typecheck && pnpm lint` (always run this entire line together!)
+- The app auto-generates `routeTree.gen.ts` - you can import from it
+
+## Important Notes
+
+- Our app uses TanStack Router
+- Authentication is completely client-side managed (JWT in localStorage)
+- No need to optimize for performance, focus on functionality
+- The managed runtime automatically runs scripts from `.codapt/scripts/`
+- Setup logic goes in `src/server/scripts/setup.ts`

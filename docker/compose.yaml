@@ -1,0 +1,162 @@
+services:
+  redis:
+    image: redis:7
+    volumes:
+      - redis-data:/data
+
+  postgres:
+    image: postgres:16
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: app
+    shm_size: 512MB
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: ${ADMIN_PASSWORD}
+    ports:
+      - "${LISTEN_IP:-127.0.0.1}:9000:9000"
+      - "${LISTEN_IP:-127.0.0.1}:9001:9001"
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+      - htpasswd-cache:/etc/nginx/.htpasswd
+    ports:
+      - "${LISTEN_IP:-127.0.0.1}:8000:8000"
+    depends_on:
+      app:
+        condition: service_started
+      adminer:
+        condition: service_started
+      htpasswd-generator:
+        condition: service_completed_successfully
+
+  htpasswd-generator:
+    image: httpd:alpine
+    command: >
+      sh -c "htpasswd -bc /htpasswd/htpasswd admin ${ADMIN_PASSWORD:-admin} &&
+             chmod 644 /htpasswd/htpasswd &&
+             echo 'Generated htpasswd file with username: admin'"
+    volumes:
+      - htpasswd-cache:/htpasswd
+    environment:
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+
+  adminer-init:
+    image: alpine:latest
+    volumes:
+      - adminer-permanent-login-key:/adminer-permanent-login-key-volume
+    command: >
+      sh -c '
+        if [ ! -f /adminer-permanent-login-key-volume/adminer-permanent-login-key ]; then
+          dd bs=64 count=1 if=/dev/urandom 2>/dev/null | base64 | LC_ALL=C tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1 > /adminer-permanent-login-key-volume/adminer-permanent-login-key
+          chmod 644 /adminer-permanent-login-key-volume/adminer-permanent-login-key
+        fi
+      '
+
+  adminer:
+    image: adminer:latest
+    depends_on:
+      postgres:
+        condition: service_started
+      adminer-init:
+        condition: service_completed_successfully
+    volumes:
+      - adminer-permanent-login-key:/adminer-permanent-login-key-volume
+    configs:
+      - source: adminer-index.php
+        target: /var/www/html/index.php
+        mode: 0444
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+      minio:
+        condition: service_started
+    command: >
+      /usr/bin/tini -- bash -c '
+        if [ "$NODE_ENV" = "development" ]; then
+          echo "Running in development mode"
+          PORT=3000 pnpm dev
+        else
+          echo "Running in production mode"
+          PORT=3000 pnpm start
+        fi
+      '
+    working_dir: /app
+    volumes:
+      - ../:/app
+      - node-modules-cache:/app/node_modules:nocopy
+    tmpfs:
+      - /app/.pnpm-store:ro,size=1k
+    env_file:
+      - ../.env
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+  adminer-permanent-login-key:
+  htpasswd-cache:
+  node-modules-cache:
+
+configs:
+  adminer-index.php:
+    content: |
+      <?php
+
+      function adminer_object() {
+        class AdminerSoftware extends Adminer\Adminer {
+          function permanentLogin($$create = false) {
+            return file_get_contents('/adminer-permanent-login-key-volume/adminer-permanent-login-key');
+          }
+
+          function credentials() {
+            // server, username and password for connecting to database
+            return array('postgres', 'postgres', 'postgres');
+          }
+
+          function database() {
+            // database name, will be escaped by Adminer
+            return 'app';
+          }
+
+          function schemas() {
+            return array('public');
+          }
+        }
+        return new AdminerSoftware();
+      }
+
+      if (empty($$_COOKIE['adminer_permanent'])) {
+        $$_POST['auth'] = [
+          'driver'    => 'pgsql',
+          'server'    => 'postgres',
+          'username'  => 'postgres',
+          'password'  => 'postgres',
+          'db'        => 'app',
+          'permanent' => 1,
+        ];
+      }
+
+      $$_GET['pgsql'] = 'postgres';
+      $$_GET['username'] = 'postgres';
+      $$_GET['db'] = 'app';
+
+      include './adminer.php';

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e
+cd `dirname $0`
+cd .. # .codapt
+cd .. # project root
+
+scripts/docker-compose down --remove-orphans

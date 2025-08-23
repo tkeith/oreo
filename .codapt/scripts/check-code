@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+cd `dirname $0`
+cd .. # .codapt
+cd .. # project root
+
+scripts/docker-compose build
+
+# run typecheck & lint in app container
+scripts/docker-compose run --no-deps --rm app bash -c "( NODE_ENV=development pnpm install ) && pnpm typecheck && pnpm lint"

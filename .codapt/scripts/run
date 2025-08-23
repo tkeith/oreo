@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -e
+cd `dirname $0`
+cd .. # .codapt
+cd .. # project root
+
+# Function to clean up containers
+cleanup() {
+  echo "Cleaning up containers..."
+  scripts/docker-compose down --remove-orphans
+  echo "Containers stopped and removed"
+  exit 0
+}
+
+# Trap signals and call cleanup function
+trap cleanup SIGINT SIGTERM
+
+# Run in attached mode (not detached)
+# This will show logs and allow Ctrl-C to stop the containers
+scripts/docker-compose up &
+
+# This allows signals to properly be handled by trap
+wait $!
+
+# If docker compose up exits normally, still run cleanup
+cleanup

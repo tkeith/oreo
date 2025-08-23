@@ -1,0 +1,5 @@
+!.env
+!prod.env
+src/generated
+node_modules
+.pnpm-store
