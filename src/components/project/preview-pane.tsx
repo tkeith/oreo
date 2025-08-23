@@ -1,4 +1,4 @@
-import { EyeIcon } from "lucide-react";
+import { EyeIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
@@ -34,6 +34,8 @@ export function PreviewPane({ projectId, events = [] }: PreviewPaneProps) {
   const token = useAuthStore((state) => state.token);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [showText, setShowText] = useState(true);
+  const [iframeKey, setIframeKey] = useState(0);
+  const [prevVmUrl, setPrevVmUrl] = useState<string | null>(null);
   const textTimerRef = useRef<NodeJS.Timeout | null>(null);
   const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -49,10 +51,28 @@ export function PreviewPane({ projectId, events = [] }: PreviewPaneProps) {
     (event) => event.eventType === "userMessage",
   );
 
+  // Force iframe recreation when VM URL changes (especially after deployment)
+  useEffect(() => {
+    if (data?.vmUrl && data.vmUrl !== prevVmUrl) {
+      // URL has changed (null -> URL or different URL)
+      setPrevVmUrl(data.vmUrl);
+      // Force iframe to recreate by changing key
+      setIframeKey((prev) => prev + 1);
+    } else if (!data?.vmUrl && prevVmUrl) {
+      // URL became null (deployment started)
+      setPrevVmUrl(null);
+    }
+  }, [data?.vmUrl, prevVmUrl]);
+
   useEffect(() => {
     const interval = setInterval(() => void refetch(), 3000);
     return () => clearInterval(interval);
   }, [refetch]);
+
+  const handleRefreshPreview = () => {
+    // Force key change to ensure full recreation of iframe
+    setIframeKey((prev) => prev + 1);
+  };
 
   // Handle text rotation when showing waiting GIF
   useEffect(() => {
@@ -92,13 +112,24 @@ export function PreviewPane({ projectId, events = [] }: PreviewPaneProps) {
 
   return (
     <>
-      <div className="flex h-16 items-center border-b border-gray-200 px-6">
-        <EyeIcon className="mr-2 h-5 w-5 text-gray-600" />
-        <h2 className="text-lg font-semibold text-gray-900">Preview</h2>
+      <div className="flex h-16 items-center justify-between border-b border-gray-200 px-6">
+        <div className="flex items-center">
+          <EyeIcon className="mr-2 h-5 w-5 text-gray-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Preview</h2>
+        </div>
+        {data?.vmUrl && (
+          <button
+            onClick={handleRefreshPreview}
+            className="rounded p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            title="Refresh preview"
+          >
+            <RefreshCwIcon className="h-4 w-4" />
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-auto">
         {data?.vmUrl ? (
-          <iframe src={data.vmUrl} className="h-full w-full" />
+          <iframe key={iframeKey} src={data.vmUrl} className="h-full w-full" />
         ) : (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
