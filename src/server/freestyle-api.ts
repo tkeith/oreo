@@ -2,7 +2,7 @@ import { z } from "zod";
 import { env } from "./env";
 
 const createVmResponseSchema = z.object({
-  short_id: z.string(),
+  id: z.string(),
 });
 
 const execAwaitResponseSchema = z.object({
@@ -17,8 +17,15 @@ export const createVm = async () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ workdir: "/" }),
   });
-  const data = createVmResponseSchema.parse(await res.json());
-  return { id: data.short_id };
+  const resJson = (await res.json()) as unknown;
+  try {
+    const data = createVmResponseSchema.parse(resJson);
+    return { id: data.id };
+  } catch (error) {
+    throw new Error(
+      `failed to parse create VM response (${JSON.stringify(resJson)}) - ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 };
 
 export const execAwait = async (vmId: string, command: string) => {
@@ -27,7 +34,14 @@ export const execAwait = async (vmId: string, command: string) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ command }),
   });
-  return execAwaitResponseSchema.parse(await res.json());
+  const resJson = (await res.json()) as unknown;
+  try {
+    return execAwaitResponseSchema.parse(resJson);
+  } catch (error) {
+    throw new Error(
+      `failed to parse execAwait response (${JSON.stringify(resJson)}) - ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 };
 
 export const setupVm = async (vmId: string) => {
