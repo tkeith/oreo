@@ -52,8 +52,6 @@ ${filteredFiles.length > 0 ? filteredFiles.map((f) => `- ${f}`).join("\n") : "No
     content: userMessageContent,
   });
 
-  updateMessagesForCaching(messages);
-
   // Emit user message event
   context.onEventEmit?.([
     {
@@ -117,6 +115,12 @@ ${filteredFiles.length > 0 ? filteredFiles.map((f) => `- ${f}`).join("\n") : "No
       }
 
       context.onStateUpdate?.();
+    },
+    prepareStep: ({ messages }) => {
+      updateMessagesForCaching(messages);
+      return {
+        messages,
+      };
     },
   });
 

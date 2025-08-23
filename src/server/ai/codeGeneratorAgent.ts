@@ -27,8 +27,6 @@ export async function runCodeGenerator(
     },
   ];
 
-  updateMessagesForCaching(messages);
-
   const result = await generateText({
     ...CLAUDE_CONFIG,
     stopWhen: stepCountIs(50),
@@ -42,6 +40,12 @@ export async function runCodeGenerator(
       }
       // Trigger database update after each step
       context.onStateUpdate?.();
+    },
+    prepareStep: ({ messages }) => {
+      updateMessagesForCaching(messages);
+      return {
+        messages,
+      };
     },
   });
 
