@@ -5,7 +5,6 @@ import { db } from "~/server/db";
 import { deserialize, serialize, listFiles } from "~/server/utils/vfs";
 import { runAgent } from "~/server/ai/chatAgent";
 import { runCodeGenerator } from "~/server/ai/codeGeneratorAgent";
-import { deployToVm } from "~/server/ai/deploy-to-vm";
 import { ModelMessage } from "ai";
 import type { ChatEvent } from "~/types/chat";
 
@@ -117,56 +116,12 @@ export const sendChatMessage = baseProcedure
         if (agentResult.specModified) {
           agentEvents.push({
             eventType: "toolCall",
-            markdown: `**Running code generator**`,
+            markdown: `**Running code generator and deployment**`,
             timestamp: Date.now(),
             agent: "chat",
           });
 
-          const { response: codeGeneratorResponse } = await runCodeGenerator({
-            projectVfs: vfs,
-            onStateUpdate: () => {
-              db.project
-                .update({
-                  where: { id: input.projectId },
-                  data: {
-                    vfs: serialize(vfs),
-                  },
-                })
-                .catch((error) => {
-                  console.error("Failed to update project:", error);
-                });
-            },
-            onEventEmit: (events) => {
-              agentEvents.push(...events);
-              db.project
-                .update({
-                  where: { id: input.projectId },
-                  data: {
-                    agentEvents: JSON.stringify(agentEvents),
-                  },
-                })
-                .catch((error) => {
-                  console.error("Failed to update agent events:", error);
-                });
-            },
-          });
-
-          agentEvents.push({
-            eventType: "toolResult",
-            markdown: codeGeneratorResponse,
-            timestamp: Date.now(),
-            agent: "chat",
-          });
-
-          // Deploy after code generation
-          agentEvents.push({
-            eventType: "toolCall",
-            markdown: `**Starting deployment to VM**`,
-            timestamp: Date.now(),
-            agent: "chat",
-          });
-
-          // Update events and set appRunning to false before deployment (app will be inaccessible)
+          // Update events and set appRunning to false before code generation/deployment
           await db.project.update({
             where: { id: input.projectId },
             data: {
@@ -177,42 +132,59 @@ export const sendChatMessage = baseProcedure
 
           let deploymentSuccessful = false;
           try {
-            // Deploy with event handler that immediately pushes events
-            const deployResult = await deployToVm(
-              input.projectId,
-              vfs,
-              async (message) => {
-                // Push each deployment event immediately
-                agentEvents.push({
-                  eventType: "toolResult",
-                  markdown: message,
-                  timestamp: Date.now(),
-                  agent: "chat",
-                });
-
-                // Update database immediately with new event
-                await db.project.update({
-                  where: { id: input.projectId },
-                  data: {
-                    agentEvents: JSON.stringify(agentEvents),
-                  },
-                });
-              },
-            );
-
-            deploymentSuccessful = true;
+            const { response: codeGeneratorResponse, deployUrl } =
+              await runCodeGenerator({
+                projectVfs: vfs,
+                projectId: input.projectId,
+                deployAfterGeneration: true, // This will handle deployment with linting fixes
+                onStateUpdate: () => {
+                  db.project
+                    .update({
+                      where: { id: input.projectId },
+                      data: {
+                        vfs: serialize(vfs),
+                      },
+                    })
+                    .catch((error) => {
+                      console.error("Failed to update project:", error);
+                    });
+                },
+                onEventEmit: (events) => {
+                  agentEvents.push(...events);
+                  db.project
+                    .update({
+                      where: { id: input.projectId },
+                      data: {
+                        agentEvents: JSON.stringify(agentEvents),
+                      },
+                    })
+                    .catch((error) => {
+                      console.error("Failed to update agent events:", error);
+                    });
+                },
+              });
 
             agentEvents.push({
               eventType: "toolResult",
-              markdown: deployResult,
+              markdown: codeGeneratorResponse,
               timestamp: Date.now(),
               agent: "chat",
             });
+
+            if (deployUrl) {
+              deploymentSuccessful = true;
+              agentEvents.push({
+                eventType: "toolResult",
+                markdown: `Deployed at ${deployUrl}`,
+                timestamp: Date.now(),
+                agent: "chat",
+              });
+            }
           } catch (error) {
-            // Log deployment error
+            // Log error
             agentEvents.push({
               eventType: "toolResult",
-              markdown: `Deployment failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+              markdown: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
               timestamp: Date.now(),
               agent: "chat",
             });
