@@ -132,6 +132,38 @@ export async function deployToVm(
   );
 
   const url = `https://${vmId}.vm.freestyle.sh`;
+
+  // Wait for app to be ready (up to 1 minute)
+  await emit("⏳ Waiting for app to start...");
+  const startTime = Date.now();
+  const timeout = 60 * 1000; // 1 minute
+  let appReady = false;
+
+  while (Date.now() - startTime < timeout) {
+    try {
+      const response = await fetch(`${url}/api/`, {
+        method: "GET",
+        signal: AbortSignal.timeout(5000), // 5 second timeout for each request
+      });
+
+      // App is ready if status is anything other than 502 (Bad Gateway)
+      if (response.status !== 502) {
+        appReady = true;
+        await emit("✅ App is ready!");
+        break;
+      }
+    } catch (error) {
+      // Ignore errors during health check (connection refused, timeouts, etc.)
+    }
+
+    // Wait 2 seconds before next check
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
+  if (!appReady) {
+    await emit("⚠️ App startup timed out after 1 minute (continuing anyway)");
+  }
+
   await emit(
     `✨ ${isInitialDeployment ? "VM warmed up" : "Deployment complete"}!`,
   );
