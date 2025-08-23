@@ -68,14 +68,17 @@ export function ChatInterface({
         <div className="space-y-4">
           {events.length === 0 ? (
             <div className="flex items-start space-x-2">
-              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100">
-                <span className="text-xs font-medium text-indigo-600">AI</span>
-              </div>
+              <img
+                src="/oreo-logo.png"
+                alt="Oreo"
+                className="h-8 w-8 flex-shrink-0 rounded-full object-contain"
+              />
               <div className="flex-1">
                 <div className="rounded-lg bg-gray-100 p-2">
                   <p className="text-sm text-gray-700">
-                    Hello! I can help you read and modify files in your project.
-                    Just ask!
+                    Oh, you're here! Meow, I'm Oreo. Describe your project idea
+                    below. I'll build it AND explain it—like having subtitles
+                    for your code!
                   </p>
                 </div>
               </div>
