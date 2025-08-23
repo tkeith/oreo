@@ -34,7 +34,7 @@ export function PreviewPane({ projectId }: { projectId: string }) {
             <div className="text-center">
               <EyeIcon className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-4 text-lg font-medium text-gray-900">
-                Not deployed
+                App not running
               </h3>
               <p className="mt-2 text-sm text-gray-600">
                 Deploy your project to see a preview

@@ -22,17 +22,18 @@ model User {
 }
 
 model Project {
-  id            String    @id @default(cuid())
-  name          String
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vfs           String
-  chatHistory   String    @default("[]") // Serialized array of chat messages (chat agent only)
-  agentEvents   String    @default("[]") // Serialized array of ChatEvent objects for UI display
-  isProcessing  Boolean   @default(false) // Whether the agent is currently processing a request
-  vmId          String?
-  vmStatus      String    @default("pending") // pending | creating | ready | failed
-  vmError       String?   // Error details if VM creation fails
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  name              String
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vfs               String
+  chatHistory       String    @default("[]") // Serialized array of chat messages (chat agent only)
+  agentEvents       String    @default("[]") // Serialized array of ChatEvent objects for UI display
+  isProcessing      Boolean   @default(false) // Whether the agent is currently processing a request
+  appRunning        Boolean   @default(false) // Whether the app is currently running and accessible
+  vmId              String?
+  vmStatus          String    @default("pending") // pending | creating | ready | failed
+  vmError           String?   // Error details if VM creation fails
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }

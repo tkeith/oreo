@@ -13,8 +13,15 @@ export const getVmUrl = baseProcedure
       where: { id: input.projectId, userId: user.id },
     });
 
-    const vmUrl = project?.vmId
-      ? `https://${project.vmId}.vm.freestyle.sh`
-      : null;
-    return { vmUrl };
+    // Only return URL if app is running
+    const vmUrl =
+      project?.vmId && project?.appRunning
+        ? `https://${project.vmId}.vm.freestyle.sh`
+        : null;
+
+    return {
+      vmUrl,
+      appRunning: project?.appRunning ?? false,
+      hasDeployed: !!project?.vmId,
+    };
   });

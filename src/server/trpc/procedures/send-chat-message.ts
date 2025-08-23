@@ -166,30 +166,44 @@ export const sendChatMessage = baseProcedure
             agent: "chat",
           });
 
-          // Update events before deployment
+          // Update events and set appRunning to false before deployment (app will be inaccessible)
           await db.project.update({
             where: { id: input.projectId },
             data: {
               agentEvents: JSON.stringify(agentEvents),
+              appRunning: false,
             },
           });
 
-          const deployResult = await deployToVm(input.projectId, vfs);
+          let deploymentSuccessful = false;
+          try {
+            const deployResult = await deployToVm(input.projectId, vfs);
+            deploymentSuccessful = true;
 
-          agentEvents.push({
-            eventType: "toolResult",
-            markdown: deployResult,
-            timestamp: Date.now(),
-            agent: "chat",
-          });
-
-          // Update events after deployment
-          await db.project.update({
-            where: { id: input.projectId },
-            data: {
-              agentEvents: JSON.stringify(agentEvents),
-            },
-          });
+            agentEvents.push({
+              eventType: "toolResult",
+              markdown: deployResult,
+              timestamp: Date.now(),
+              agent: "chat",
+            });
+          } catch (error) {
+            // Log deployment error
+            agentEvents.push({
+              eventType: "toolResult",
+              markdown: `Deployment failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+              timestamp: Date.now(),
+              agent: "chat",
+            });
+          } finally {
+            // Set appRunning to true only if deployment was successful
+            await db.project.update({
+              where: { id: input.projectId },
+              data: {
+                agentEvents: JSON.stringify(agentEvents),
+                appRunning: deploymentSuccessful,
+              },
+            });
+          }
         }
 
         // Clear processing flag when done
