@@ -54,7 +54,7 @@ function ProjectDetailPage() {
     ),
   );
 
-  // Fetch VFS files
+  // Fetch VFS files with auto-refresh every 5 seconds
   const {
     data: vfsData,
     isLoading: isLoadingFiles,
@@ -62,7 +62,10 @@ function ProjectDetailPage() {
   } = useQuery(
     trpc.projects.getVfsFiles.queryOptions(
       { token: token ?? "", projectId },
-      { enabled: !!token },
+      {
+        enabled: !!token,
+        refetchInterval: 5000, // Auto-refresh every 5 seconds
+      },
     ),
   );
 
