@@ -2,9 +2,19 @@ import { createTRPCRouter } from "~/server/trpc/main";
 import { createProject } from "~/server/trpc/procedures/create-project";
 import { listProjects } from "~/server/trpc/procedures/list-projects";
 import { getProject } from "~/server/trpc/procedures/get-project";
+import { getVfsFiles } from "~/server/trpc/procedures/get-vfs-files";
+import { getVfsFileContent } from "~/server/trpc/procedures/get-vfs-file-content";
+import { createVfsFile } from "~/server/trpc/procedures/create-vfs-file";
+import { updateVfsFile } from "~/server/trpc/procedures/update-vfs-file";
+import { sendChatMessage } from "~/server/trpc/procedures/send-chat-message";
 
 export const projectsRouter = createTRPCRouter({
   create: createProject,
   list: listProjects,
   get: getProject,
+  getVfsFiles: getVfsFiles,
+  getVfsFileContent: getVfsFileContent,
+  createVfsFile: createVfsFile,
+  updateVfsFile: updateVfsFile,
+  sendChatMessage: sendChatMessage,
 });

@@ -1,0 +1,503 @@
+openapi: 3.1.0
+info:
+  title: Freestyle Firecracker
+  description: Freestyle Firecracker Service, we do Firecrackers now.
+  contact:
+    name: Ben
+    email: ben@freestyle.sh
+  license:
+    name: ""
+  version: 0.1.0
+paths:
+  /vms:
+    get:
+      tags:
+        - VM
+      description: List all VMs
+      operationId: handle_list_vms
+      responses:
+        "200":
+          description: Successfully listed VMs
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - vms
+                  - totalCount
+                  - runningCount
+                  - startingCount
+                  - stoppedCount
+                properties:
+                  runningCount:
+                    type: integer
+                    minimum: 0
+                  startingCount:
+                    type: integer
+                    minimum: 0
+                  stoppedCount:
+                    type: integer
+                    minimum: 0
+                  totalCount:
+                    type: integer
+                    minimum: 0
+                  userId:
+                    type:
+                      - string
+                      - "null"
+                  vms:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/VmInfo"
+                    description: List of VMs
+    post:
+      tags:
+        - VM
+      description: Create new VM
+      operationId: handle_create_vm
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVmRequest"
+        required: true
+      responses:
+        "200":
+          description: Successfully created VM
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - short_id
+                  - guest_ip
+                  - host_ip
+                  - netns
+                  - ingress_ip
+                  - ingress_ipv6
+                properties:
+                  guest_ip:
+                    type: string
+                  host_ip:
+                    type: string
+                  id:
+                    $ref: "#/components/schemas/VmShortId"
+                  ingress_ip:
+                    type: string
+                  ingress_ipv6:
+                    type: string
+                  netns:
+                    type: string
+                  short_id:
+                    $ref: "#/components/schemas/VmShortId"
+        "404":
+          description: VM not found
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                properties:
+                  message:
+                    type: string
+  /vms/{id}/resize:
+    post:
+      tags:
+        - VM
+      operationId: handle_resize_vm
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResizeVmRequest"
+        required: true
+      responses:
+        "200":
+          description: VM rootfs resized successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResizeVmResponse"
+        "400":
+          description: Bad request
+        "404":
+          description: VM not found
+        "500":
+          description: Internal server error
+  /vms/{vm_id}:
+    get:
+      tags:
+        - VM
+      description: Get info on a VM
+      operationId: handle_get_vm
+      responses:
+        "200":
+          description: Successfully created VM
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    type: string
+        "404":
+          description: VM not found
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                properties:
+                  message:
+                    type: string
+    delete:
+      tags:
+        - VM
+      description: Create new VM
+      operationId: handle_delete_vm
+      responses:
+        "200":
+          description: Successfully created VM
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    type: string
+  /vms/{vm_id}/exec-await:
+    post:
+      tags:
+        - VM
+      operationId: handle_exec_await
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExecAwait"
+        required: true
+      responses:
+        "200":
+          description: Successfully executed command on VM
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - stdout
+                  - stderr
+                properties:
+                  status_code:
+                    type:
+                      - integer
+                      - "null"
+                    format: int32
+                  stderr:
+                    type: string
+                  stdout:
+                    type: string
+  /vms/{vm_id}/files/{*filepath}:
+    get:
+      tags:
+        - VM
+      operationId: handle_filesystem_operation
+      parameters:
+        - name: vm_id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/VmShortId"
+      responses:
+        "200":
+          description: Successfully listed directory from VM
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - files
+                properties:
+                  files:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FileInfo"
+    put:
+      tags:
+        - VM
+      operationId: handle_write_file
+      parameters:
+        - name: vm_id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/VmShortId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WriteFileRequest"
+        required: true
+      responses:
+        "200":
+          description: Successfully executed command on VM
+          content:
+            application/json:
+              schema:
+                type: object
+  /vms/{vm_id}/mcp:
+    post:
+      tags:
+        - VM
+      operationId: handle_vm_mcp
+      responses:
+        "200":
+          description: MCP communication via streamable HTTP
+  /vms/{vm_id}/optimize:
+    post:
+      tags:
+        - VM
+      description: Optimize VM snapshot and rootfs to single extents on host
+      operationId: handle_optimize_vm
+      responses:
+        "200":
+          description: Successfully optimized VM files
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - message
+                properties:
+                  id:
+                    type: string
+                  message:
+                    type: string
+  /vms/{vm_id}/start:
+    post:
+      tags:
+        - VM
+      description: Start existing VM
+      operationId: handle_start_vm
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartVmRequest"
+        required: true
+      responses:
+        "200":
+          description: Successfully created VM
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartedVm"
+        "404":
+          description: VM not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /vms/{vm_id}/stop:
+    post:
+      tags:
+        - VM
+      description: Stop a VM
+      operationId: handle_stop_vm
+      responses:
+        "200":
+          description: Successfully created VM
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    $ref: "#/components/schemas/VmShortId"
+  /vms/{vm_id}/suspend:
+    post:
+      tags:
+        - VM
+      description: Stop a VM
+      operationId: handle_suspend_vm
+      responses:
+        "200":
+          description: Successfully created VM
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    type: string
+  /vms/{vm_id}/wait:
+    post:
+      tags:
+        - VM
+      description: Wait until a VM has ended
+      operationId: handle_wait_vm
+      responses:
+        "200":
+          description: VM has ended
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - exit_status
+                properties:
+                  exit_status:
+                    type: string
+                  id:
+                    $ref: "#/components/schemas/VmShortId"
+        "404":
+          description: VM not found or not running
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                properties:
+                  error:
+                    type: string
+  /vms/{vm_id}/watch-files:
+    get:
+      tags:
+        - VM
+      operationId: handle_watch_files
+      responses:
+        "200":
+          description: Stream of file change events as chunked JSON
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    CreateVmRequest:
+      type: object
+      properties:
+        forkVmId:
+          type:
+            - string
+            - "null"
+          description:
+            Optional ID of the VM to fork from. If provided, the new VM will be
+            a copy of the specified VM.
+        idleTimeoutSeconds:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: >-
+            Idle timeout in seconds. If set, the VM will be automatically
+            suspended after this many seconds of no network activity.
+
+            Defaults to 300 seconds (5 minutes) if not provided or the last used
+            timeout for the forked VM.
+          minimum: 0
+        readySignalTimeoutSeconds:
+          type:
+            - integer
+            - "null"
+          format: int64
+          minimum: 0
+        waitForReadySignal:
+          type:
+            - boolean
+            - "null"
+        workdir:
+          type:
+            - string
+            - "null"
+          description:
+            Optional working directory for the VM. If not provided, the default
+            to '/'
+    ExecAwait:
+      type: object
+      required:
+        - command
+      properties:
+        command:
+          type: string
+    ResizeVmRequest:
+      type: object
+      required:
+        - size_mb
+      properties:
+        size_mb:
+          type: integer
+          format: int64
+          description: New size for the rootfs in MB
+          minimum: 0
+    ResizeVmResponse:
+      type: object
+      required:
+        - message
+        - vm_id
+        - new_size_mb
+        - was_running
+      properties:
+        message:
+          type: string
+        new_size_mb:
+          type: integer
+          format: int64
+          minimum: 0
+        vm_id:
+          type: string
+        was_running:
+          type: boolean
+    StartVmRequest:
+      type: object
+      properties:
+        idleTimeoutSeconds:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description: >-
+            Idle timeout in seconds. If set, the VM will be automatically
+            suspended after this many seconds of no network activity.
+
+            Defaults to 300 seconds (5 minutes) if not provided or the last used
+            timout for this VM.
+          minimum: 0
+        readySignalTimeoutSeconds:
+          type:
+            - integer
+            - "null"
+          format: int64
+          description:
+            Maximum time to wait for the readiness signal in seconds. Defaults
+            to 120 seconds.
+          minimum: 0
+        waitForReadySignal:
+          type:
+            - boolean
+            - "null"
+          description: >-
+            Wait for a readiness signal to appear in the serial console before
+            returning success.
+
+            This ensures the VM has fully booted and all services are ready.
+    WriteFileRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
