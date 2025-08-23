@@ -147,7 +147,7 @@ export function FileSystemView({
                     style={{ minHeight: "400px" }}
                   />
                 ) : (
-                  <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-300">
+                  <pre className="overflow-x-hidden whitespace-pre-wrap break-words rounded-lg bg-gray-900 p-4 text-sm text-gray-300">
                     <code>{fileContent ?? ""}</code>
                   </pre>
                 )}

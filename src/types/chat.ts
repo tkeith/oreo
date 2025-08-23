@@ -10,6 +10,8 @@ export const chatEventSchema = z.object({
     "toolResult",
   ]),
   markdown: z.string(),
+  timestamp: z.number(), // Unix timestamp in milliseconds
+  agent: z.enum(["chat", "codeGenerator"]),
 });
 
 export type ChatEvent = z.infer<typeof chatEventSchema>;
@@ -60,23 +62,29 @@ const contentPartSchema = z.union([
 export function contentPartToEvent(
   part: unknown,
   role: string,
+  agent: "chat" | "codeGenerator",
 ): ChatEvent | null {
   const partResult = contentPartSchema.safeParse(part);
   if (!partResult.success) return null;
 
   const item = partResult.data;
+  const timestamp = Date.now();
 
   switch (item.type) {
     case "text":
       return {
         eventType: role === "user" ? "userMessage" : "aiMessage",
         markdown: item.text,
+        timestamp,
+        agent,
       };
 
     case "reasoning":
       return {
         eventType: "aiReasoning",
         markdown: item.text,
+        timestamp,
+        agent,
       };
 
     case "tool-call": {
@@ -88,6 +96,8 @@ export function contentPartToEvent(
       return {
         eventType: "toolCall",
         markdown: `**${item.toolName}**\n\`\`\`json\n${jsonContent}\n\`\`\``,
+        timestamp,
+        agent,
       };
     }
 
@@ -110,10 +120,96 @@ export function contentPartToEvent(
       return {
         eventType: "toolResult",
         markdown: `**${item.toolName}**\n\`\`\`\n${formatted}\n\`\`\``,
+        timestamp,
+        agent,
       };
     }
 
     default:
       return null;
   }
+}
+
+// Helper to convert step data to events
+export function stepToEvents(
+  step: {
+    text?: string;
+    reasoning?: Array<{ text: string }> | string;
+    toolCalls?: Array<{ toolName: string; input: unknown }>;
+    toolResults?: Array<{ toolName: string; output: unknown }>;
+  },
+  agent: "chat" | "codeGenerator",
+): ChatEvent[] {
+  const events: ChatEvent[] = [];
+  const timestamp = Date.now();
+
+  // Add reasoning if present
+  if (step.reasoning) {
+    // Handle both array and string formats
+    const reasoningText = Array.isArray(step.reasoning)
+      ? step.reasoning.map((r) => r.text).join("")
+      : step.reasoning;
+
+    if (reasoningText) {
+      events.push({
+        eventType: "aiReasoning",
+        markdown: reasoningText,
+        timestamp,
+        agent,
+      });
+    }
+  }
+
+  // Add AI text if present
+  if (step.text) {
+    events.push({
+      eventType: "aiMessage",
+      markdown: step.text,
+      timestamp,
+      agent,
+    });
+  }
+
+  // Add tool calls
+  if (step.toolCalls) {
+    for (const toolCall of step.toolCalls) {
+      const jsonContent = JSON.stringify(toolCall.input, null, 2).replace(
+        /```/g,
+        "\\`\\`\\`",
+      );
+      events.push({
+        eventType: "toolCall",
+        markdown: `**${toolCall.toolName}**\n\`\`\`json\n${jsonContent}\n\`\`\``,
+        timestamp,
+        agent,
+      });
+    }
+  }
+
+  // Add tool results
+  if (step.toolResults) {
+    for (const toolResult of step.toolResults) {
+      const output = toolResult.output as
+        | Record<string, unknown>
+        | string
+        | null
+        | undefined;
+      const value =
+        typeof output === "object" && output && "value" in output
+          ? output.value
+          : output;
+      let formatted =
+        typeof value === "string" ? value : JSON.stringify(value, null, 2);
+      formatted = formatted.replace(/```/g, "\\`\\`\\`");
+
+      events.push({
+        eventType: "toolResult",
+        markdown: `**${toolResult.toolName}**\n\`\`\`\n${formatted}\n\`\`\``,
+        timestamp,
+        agent,
+      });
+    }
+  }
+
+  return events;
 }

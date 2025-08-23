@@ -18,11 +18,19 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const [chatMessage, setChatMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevEventCountRef = useRef(0);
 
-  // Auto-scroll to bottom when new events arrive
+  // Auto-scroll to bottom only on first load or when number of messages changes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [events]);
+    const isFirstLoad = prevEventCountRef.current === 0 && events.length > 0;
+    const hasNewMessages = events.length > prevEventCountRef.current;
+
+    if (isFirstLoad || hasNewMessages) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+
+    prevEventCountRef.current = events.length;
+  }, [events.length]);
 
   const handleSendMessage = () => {
     if (chatMessage.trim() && !isProcessing) {

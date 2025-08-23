@@ -5,6 +5,7 @@ import { db } from "~/server/db";
 import { deserialize, serialize, listFiles } from "~/server/utils/vfs";
 import { runAgent } from "~/server/ai/chatAgent";
 import { ModelMessage } from "ai";
+import type { ChatEvent } from "~/types/chat";
 
 export const sendChatMessage = baseProcedure
   .input(
@@ -64,6 +65,15 @@ export const sendChatMessage = baseProcedure
           chatHistory = [];
         }
 
+        // Parse existing agent events or initialize empty array
+        let agentEvents: ChatEvent[] = [];
+        try {
+          agentEvents = JSON.parse(project.agentEvents || "[]") as ChatEvent[];
+        } catch (error) {
+          console.error("Failed to parse agent events:", error);
+          agentEvents = [];
+        }
+
         // Run the AI agent with chat history
         await runAgent(input.message, {
           projectVfs: vfs,
@@ -80,6 +90,22 @@ export const sendChatMessage = baseProcedure
               })
               .catch((error) => {
                 console.error("Failed to update project:", error);
+              });
+          },
+          onEventEmit: (events) => {
+            // Append new events to agentEvents array
+            agentEvents.push(...events);
+
+            // Save to database
+            db.project
+              .update({
+                where: { id: input.projectId },
+                data: {
+                  agentEvents: JSON.stringify(agentEvents),
+                },
+              })
+              .catch((error) => {
+                console.error("Failed to update agent events:", error);
               });
           },
         });

@@ -1,6 +1,16 @@
 import { z } from "zod";
 import * as vfs from "~/server/utils/vfs";
 
+export function filterFilesByPrefixes(
+  files: string[],
+  allowedPrefixes: string[] = [],
+): string[] {
+  if (allowedPrefixes.length === 0) return files;
+  return files.filter((file) =>
+    allowedPrefixes.some((prefix) => file.startsWith(prefix)),
+  );
+}
+
 export function createVFSTools(
   workingVfs: vfs.VFS,
   allowedPrefixes: string[] = [],
@@ -48,7 +58,7 @@ export function createVFSTools(
         const files = vfs
           .listFiles(workingVfs)
           .filter((file) => checkPath(file));
-        return files.join("\n");
+        return files.length > 0 ? files.join("\n") : "No files in project yet.";
       },
     },
   };

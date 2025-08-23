@@ -4,15 +4,16 @@ import { CLAUDE_CONFIG } from "./constants";
 import { updateMessagesForCaching } from "./utils/anthropic-prompt-caching";
 import { createVFSTools } from "./vfs-tools";
 import { getCodeGeneratorSystemPrompt } from "./prompts/code-generator-system-prompt";
+import { stepToEvents, type ChatEvent } from "~/types/chat";
 
 interface CodeGeneratorContext {
   projectVfs: vfs.VFS;
-  instruction: string;
+  onEventEmit?: (events: ChatEvent[]) => void;
 }
 
 export async function runCodeGenerator(
   context: CodeGeneratorContext,
-): Promise<{ response: string; messages: ModelMessage[] }> {
+): Promise<{ response: string }> {
   const messages: ModelMessage[] = [
     {
       role: "system",
@@ -20,13 +21,11 @@ export async function runCodeGenerator(
     },
     {
       role: "user",
-      content: context.instruction,
+      content: "Ensure the code matches the spec.",
     },
   ];
 
   updateMessagesForCaching(messages);
-
-  let previousReceivedMessageCount = 0;
 
   const result = await generateText({
     ...CLAUDE_CONFIG,
@@ -34,18 +33,15 @@ export async function runCodeGenerator(
     messages,
     tools: createVFSTools(context.projectVfs), // Unrestricted access
     onStepFinish(stepResult) {
-      const newMessages = stepResult.response.messages.slice(
-        previousReceivedMessageCount,
-      );
-      for (const message of newMessages) {
-        messages.push(message);
-        previousReceivedMessageCount++;
+      // Emit events for this step
+      const events = stepToEvents(stepResult, "codeGenerator");
+      if (events.length > 0) {
+        context.onEventEmit?.(events);
       }
     },
   });
 
   return {
     response: result.text,
-    messages,
   };
 }

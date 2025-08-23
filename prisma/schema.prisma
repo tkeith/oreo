@@ -27,7 +27,8 @@ model Project {
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   vfs           String
-  chatHistory   String    @default("[]") // Serialized array of chat messages
+  chatHistory   String    @default("[]") // Serialized array of chat messages (chat agent only)
+  agentEvents   String    @default("[]") // Serialized array of ChatEvent objects for UI display
   isProcessing  Boolean   @default(false) // Whether the agent is currently processing a request
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

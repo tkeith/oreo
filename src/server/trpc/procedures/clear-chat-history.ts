@@ -33,11 +33,12 @@ export const clearChatHistory = baseProcedure
       throw new Error("Cannot clear chat history while agent is processing");
     }
 
-    // Clear the chat history
+    // Clear both chat history and agent events
     await db.project.update({
       where: { id: input.projectId },
       data: {
         chatHistory: "[]",
+        agentEvents: "[]",
       },
     });
 

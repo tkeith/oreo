@@ -41,9 +41,9 @@ export function ChatMessage({ event }: ChatMessageProps) {
           {style.avatar.text}
         </span>
       </div>
-      <div className="flex-1">
-        <div className={`rounded-lg p-2 ${style.content}`}>
-          <article className="prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1">
+      <div className="min-w-0 flex-1">
+        <div className={`overflow-hidden rounded-lg p-2 ${style.content}`}>
+          <article className="prose prose-sm max-w-none overflow-x-hidden break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_pre]:overflow-x-auto">
             <Markdown>{event.markdown}</Markdown>
           </article>
         </div>

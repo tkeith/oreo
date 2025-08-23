@@ -2,9 +2,7 @@ import { z } from "zod";
 import { baseProcedure } from "~/server/trpc/main";
 import { verifyToken } from "~/server/auth";
 import { db } from "~/server/db";
-import { ModelMessage } from "ai";
-import { stripXmlTags } from "~/server/utils/strip-xml";
-import { contentPartToEvent, type ChatEvent } from "~/types/chat";
+import type { ChatEvent } from "~/types/chat";
 
 export const getChatHistory = baseProcedure
   .input(
@@ -26,7 +24,7 @@ export const getChatHistory = baseProcedure
         userId: user.id,
       },
       select: {
-        chatHistory: true,
+        agentEvents: true,
         isProcessing: true,
       },
     });
@@ -35,54 +33,13 @@ export const getChatHistory = baseProcedure
       throw new Error("Project not found");
     }
 
-    // Parse chat history
-    let messages: ModelMessage[] = [];
+    // Parse agent events
+    let events: ChatEvent[] = [];
     try {
-      messages = JSON.parse(project.chatHistory || "[]") as ModelMessage[];
+      events = JSON.parse(project.agentEvents || "[]") as ChatEvent[];
     } catch (error) {
-      console.error("Failed to parse chat history:", error);
-      messages = [];
-    }
-
-    // Convert messages to events for client display
-    const events: ChatEvent[] = [];
-
-    for (const message of messages) {
-      if (message.role === "system") continue; // Skip system messages
-
-      if (typeof message.content === "string") {
-        // Simple string content
-        const cleanText = stripXmlTags(message.content);
-        if (cleanText) {
-          events.push({
-            eventType: message.role === "user" ? "userMessage" : "aiMessage",
-            markdown: cleanText,
-          });
-        }
-      } else if (Array.isArray(message.content)) {
-        // Array of content parts - each becomes a separate event
-        for (const part of message.content) {
-          // Strip XML from text parts before processing
-          let processedPart: unknown = part;
-          if (typeof part === "object" && part !== null && "type" in part) {
-            const typedPart = part as unknown as Record<string, unknown>;
-            if (
-              typedPart.type === "text" &&
-              typeof typedPart.text === "string"
-            ) {
-              processedPart = {
-                ...typedPart,
-                text: stripXmlTags(typedPart.text),
-              };
-            }
-          }
-
-          const event = contentPartToEvent(processedPart, message.role);
-          if (event && event.markdown) {
-            events.push(event);
-          }
-        }
-      }
+      console.error("Failed to parse agent events:", error);
+      events = [];
     }
 
     return {

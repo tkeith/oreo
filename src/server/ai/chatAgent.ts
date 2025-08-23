@@ -4,14 +4,17 @@ import * as vfs from "~/server/utils/vfs";
 import { CLAUDE_CONFIG } from "./constants";
 import { updateMessagesForCaching } from "./utils/anthropic-prompt-caching";
 import { getChatSystemPrompt } from "./prompts/chat-system-prompt";
-import { createVFSTools } from "./vfs-tools";
+import { createVFSTools, filterFilesByPrefixes } from "./vfs-tools";
 import { runCodeGenerator } from "./codeGeneratorAgent";
+import { stepToEvents, type ChatEvent } from "~/types/chat";
+import { stripXmlTags } from "~/server/utils/strip-xml";
 
 interface AgentContext {
   projectVfs: vfs.VFS;
   projectFiles: string[];
   messages: ModelMessage[];
   onStateUpdate?: () => void;
+  onEventEmit?: (events: ChatEvent[]) => void;
 }
 
 export async function runAgent(
@@ -19,6 +22,7 @@ export async function runAgent(
   context: AgentContext,
 ): Promise<{ response: string }> {
   const workingVfs = context.projectVfs;
+  const allowedPrefixes = ["/spec"];
 
   const messages = context.messages;
 
@@ -29,19 +33,36 @@ export async function runAgent(
     });
   }
 
-  messages.push({
-    role: "user",
-    content:
-      message +
-      `\n\n
+  // Add user message to chat history
+  const filteredFiles = filterFilesByPrefixes(
+    context.projectFiles,
+    allowedPrefixes,
+  );
+  const userMessageContent =
+    message +
+    `\n\n
 <additional-context>
 <current-files-in-project>
-${context.projectFiles.map((f) => `- ${f}`).join("\n")}
+${filteredFiles.length > 0 ? filteredFiles.map((f) => `- ${f}`).join("\n") : "No files in project yet."}
 </current-files-in-project>
-</additional-context>`,
+</additional-context>`;
+
+  messages.push({
+    role: "user",
+    content: userMessageContent,
   });
 
   updateMessagesForCaching(messages);
+
+  // Emit user message event
+  context.onEventEmit?.([
+    {
+      eventType: "userMessage",
+      markdown: stripXmlTags(message), // Strip additional context
+      timestamp: Date.now(),
+      agent: "chat",
+    },
+  ]);
 
   context.onStateUpdate?.();
 
@@ -53,7 +74,7 @@ ${context.projectFiles.map((f) => `- ${f}`).join("\n")}
     stopWhen: stepCountIs(50),
     messages,
     tools: {
-      ...createVFSTools(workingVfs, ["/spec"]),
+      ...createVFSTools(workingVfs, allowedPrefixes),
       runCodeGenerator: {
         description:
           "Run the code generator agent to generate code based on an instruction",
@@ -65,12 +86,9 @@ ${context.projectFiles.map((f) => `- ${f}`).join("\n")}
         execute: async ({ instruction }: { instruction: string }) => {
           const result = await runCodeGenerator({
             projectVfs: workingVfs,
-            instruction,
+            onEventEmit: context.onEventEmit,
           });
-          // Add code generator messages to chat history
-          for (const msg of result.messages) {
-            messages.push(msg);
-          }
+          // Note: We don't add code generator messages to chat history anymore
           return result.response;
         },
       },
@@ -84,6 +102,13 @@ ${context.projectFiles.map((f) => `- ${f}`).join("\n")}
         messages.push(message);
         previousReceivedMessageCount++;
       }
+
+      // Emit events for this step
+      const events = stepToEvents(stepResult, "chat");
+      if (events.length > 0) {
+        context.onEventEmit?.(events);
+      }
+
       context.onStateUpdate?.();
     },
   });
