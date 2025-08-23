@@ -8,6 +8,7 @@ import { createVfsFile } from "~/server/trpc/procedures/create-vfs-file";
 import { updateVfsFile } from "~/server/trpc/procedures/update-vfs-file";
 import { sendChatMessage } from "~/server/trpc/procedures/send-chat-message";
 import { clearChatHistory } from "~/server/trpc/procedures/clear-chat-history";
+import { getChatHistory } from "~/server/trpc/procedures/get-chat-history";
 
 export const projectsRouter = createTRPCRouter({
   create: createProject,
@@ -19,4 +20,5 @@ export const projectsRouter = createTRPCRouter({
   updateVfsFile: updateVfsFile,
   sendChatMessage: sendChatMessage,
   clearChatHistory: clearChatHistory,
+  getChatHistory: getChatHistory,
 });

@@ -5,6 +5,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import { useAuthStore } from "~/stores/auth-store";
 import { CreateFileModal } from "~/components/create-file-modal";
+import { ModelMessage } from "ai";
 import {
   ProjectHeader,
   ViewMode,
@@ -16,11 +17,6 @@ import {
 export const Route = createFileRoute("/app/projects/$projectId/")({
   component: ProjectDetailPage,
 });
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
 
 function ProjectDetailPage() {
   const navigate = useNavigate();
@@ -34,8 +30,6 @@ function ProjectDetailPage() {
   );
   const [isCreateFileModalOpen, setIsCreateFileModalOpen] = useState(false);
   const [createFileParentPath, setCreateFileParentPath] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isChatLoading, setIsChatLoading] = useState(false);
 
   // Fetch project details
   const {
@@ -46,6 +40,17 @@ function ProjectDetailPage() {
     trpc.projects.get.queryOptions(
       { token: token ?? "", projectId },
       { enabled: !!token },
+    ),
+  );
+
+  // Poll chat history
+  const { data: chatData } = useQuery(
+    trpc.projects.getChatHistory.queryOptions(
+      { token: token ?? "", projectId },
+      {
+        enabled: !!token,
+        refetchInterval: 1000, // Poll every second
+      },
     ),
   );
 
@@ -102,22 +107,9 @@ function ProjectDetailPage() {
   // Send chat message mutation
   const sendChatMutation = useMutation(
     trpc.projects.sendChatMessage.mutationOptions({
-      onSuccess: (data) => {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data.response },
-        ]);
-        void refetchFiles();
-        void refetchFileContent();
-        setIsChatLoading(false);
-      },
       onError: (error) => {
         console.error("Failed to send message:", error);
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: `Error: ${error.message}` },
-        ]);
-        setIsChatLoading(false);
+        alert(`Failed to send message: ${error.message}`);
       },
     }),
   );
@@ -125,9 +117,6 @@ function ProjectDetailPage() {
   // Clear chat history mutation
   const clearChatMutation = useMutation(
     trpc.projects.clearChatHistory.mutationOptions({
-      onSuccess: () => {
-        setMessages([]);
-      },
       onError: (error) => {
         console.error("Failed to clear chat history:", error);
         alert(`Failed to clear chat history: ${error.message}`);
@@ -176,8 +165,6 @@ function ProjectDetailPage() {
   };
 
   const handleSendMessage = (message: string) => {
-    setMessages((prev) => [...prev, { role: "user", content: message }]);
-    setIsChatLoading(true);
     void sendChatMutation.mutateAsync({
       token: token ?? "",
       projectId,
@@ -242,8 +229,8 @@ function ProjectDetailPage() {
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         <ChatInterface
-          messages={messages}
-          isLoading={isChatLoading}
+          messages={chatData?.messages ?? []}
+          isProcessing={chatData?.isProcessing ?? false}
           onSendMessage={handleSendMessage}
           onClearChat={handleClearChat}
         />

@@ -1,28 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MessageSquareIcon, SendIcon, Trash2Icon } from "lucide-react";
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
+import { ModelMessage } from "ai";
+import { ChatMessage } from "./chat-message";
+import type { ExtendedModelMessage } from "~/types/chat";
 
 interface ChatInterfaceProps {
-  messages: Message[];
-  isLoading?: boolean;
+  messages: ModelMessage[];
+  isProcessing?: boolean;
   onSendMessage?: (message: string) => void;
   onClearChat?: () => void;
 }
 
 export function ChatInterface({
   messages,
-  isLoading,
+  isProcessing,
   onSendMessage,
   onClearChat,
 }: ChatInterfaceProps) {
   const [chatMessage, setChatMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSendMessage = () => {
-    if (chatMessage.trim() && !isLoading) {
+    if (chatMessage.trim() && !isProcessing) {
       onSendMessage?.(chatMessage);
       setChatMessage("");
     }
@@ -39,8 +43,13 @@ export function ChatInterface({
         {messages.length > 0 && onClearChat && (
           <button
             onClick={onClearChat}
-            className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-            title="Clear chat history"
+            disabled={isProcessing}
+            className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+            title={
+              isProcessing
+                ? "Cannot clear while processing"
+                : "Clear chat history"
+            }
           >
             <Trash2Icon className="h-4 w-4" />
           </button>
@@ -65,38 +74,23 @@ export function ChatInterface({
               </div>
             </div>
           ) : (
-            messages.map((msg, idx) => (
-              <div key={idx} className="flex items-start space-x-2">
-                <div
-                  className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${
-                    msg.role === "user" ? "bg-gray-600" : "bg-indigo-100"
-                  }`}
-                >
-                  <span className="text-xs font-medium text-white">
-                    {msg.role === "user" ? "U" : "AI"}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <div
-                    className={`rounded-lg p-2 ${
-                      msg.role === "user" ? "bg-gray-200" : "bg-gray-100"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap text-sm text-gray-700">
-                      {msg.content}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))
+            messages
+              .filter((msg) => msg.role !== "system") // Don't show system messages by default
+              .map((msg, idx) => {
+                const extMsg = msg as unknown as ExtendedModelMessage;
+                return (
+                  <ChatMessage key={extMsg.id || `msg-${idx}`} message={msg} />
+                );
+              })
           )}
-          {isLoading && (
+          {isProcessing && (
             <div className="flex items-center space-x-2 text-gray-500">
               <div className="h-2 w-2 animate-bounce rounded-full bg-gray-400"></div>
               <div className="animation-delay-200 h-2 w-2 animate-bounce rounded-full bg-gray-400"></div>
               <div className="animation-delay-400 h-2 w-2 animate-bounce rounded-full bg-gray-400"></div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -118,7 +112,7 @@ export function ChatInterface({
           />
           <button
             onClick={handleSendMessage}
-            disabled={!chatMessage.trim() || isLoading}
+            disabled={!chatMessage.trim() || isProcessing}
             className="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <SendIcon className="h-3.5 w-3.5" />

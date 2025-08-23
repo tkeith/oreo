@@ -2,15 +2,16 @@ import { z } from "zod";
 import { baseProcedure } from "~/server/trpc/main";
 import { verifyToken } from "~/server/auth";
 import { db } from "~/server/db";
+import { ModelMessage } from "ai";
 
-export const clearChatHistory = baseProcedure
+export const getChatHistory = baseProcedure
   .input(
     z.object({
       token: z.string(),
       projectId: z.string(),
     }),
   )
-  .mutation(async ({ input }) => {
+  .query(async ({ input }) => {
     const user = await verifyToken(input.token);
 
     if (!user) {
@@ -22,24 +23,27 @@ export const clearChatHistory = baseProcedure
         id: input.projectId,
         userId: user.id,
       },
+      select: {
+        chatHistory: true,
+        isProcessing: true,
+      },
     });
 
     if (!project) {
       throw new Error("Project not found");
     }
 
-    // Don't allow clearing while processing
-    if (project.isProcessing) {
-      throw new Error("Cannot clear chat history while agent is processing");
+    // Parse chat history
+    let messages: ModelMessage[] = [];
+    try {
+      messages = JSON.parse(project.chatHistory || "[]") as ModelMessage[];
+    } catch (error) {
+      console.error("Failed to parse chat history:", error);
+      messages = [];
     }
 
-    // Clear the chat history
-    await db.project.update({
-      where: { id: input.projectId },
-      data: {
-        chatHistory: "[]",
-      },
-    });
-
-    return { success: true };
+    return {
+      messages,
+      isProcessing: project.isProcessing,
+    };
   });
