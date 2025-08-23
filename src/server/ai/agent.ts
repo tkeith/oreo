@@ -2,6 +2,7 @@ import { generateText, ModelMessage, stepCountIs } from "ai";
 import { z } from "zod";
 import * as vfs from "~/server/utils/vfs";
 import { CLAUDE_CONFIG } from "./constants";
+import { updateMessagesForCaching } from "./utils/anthropic-prompt-caching";
 
 interface AgentContext {
   projectVfs: vfs.VFS;
@@ -38,6 +39,8 @@ ${context.projectFiles.map((f) => `- ${f}`).join("\n")}
 </current-files-in-project>
 </additional-context>`,
   });
+
+  updateMessagesForCaching(messages);
 
   context.onStateUpdate?.();
 
