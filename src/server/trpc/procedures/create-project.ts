@@ -56,10 +56,13 @@ export const createProject = baseProcedure
           where: { id: project.id },
           data: { vmId: vm.id, vmStatus: "ready" },
         });
-      } catch {
+      } catch (error) {
         await db.project.update({
           where: { id: project.id },
-          data: { vmStatus: "failed" },
+          data: {
+            vmStatus: "failed",
+            vmError: error instanceof Error ? error.message : String(error),
+          },
         });
       }
     })();

@@ -32,6 +32,7 @@ model Project {
   isProcessing  Boolean   @default(false) // Whether the agent is currently processing a request
   vmId          String?
   vmStatus      String    @default("pending") // pending | creating | ready | failed
+  vmError       String?   // Error details if VM creation fails
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
