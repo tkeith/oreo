@@ -15,7 +15,7 @@ export const createVm = async () => {
   const res = await fetch(`${env.FREESTYLE_API_URL}/vms`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ workdir: "/app" }),
+    body: JSON.stringify({ workdir: "/" }),
   });
   const data = createVmResponseSchema.parse(await res.json());
   return { id: data.short_id };
