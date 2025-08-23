@@ -22,7 +22,7 @@ export function PreviewPane({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <div className="flex items-center border-b border-gray-200 px-6 py-4">
+      <div className="flex h-16 items-center border-b border-gray-200 px-6">
         <EyeIcon className="mr-2 h-5 w-5 text-gray-600" />
         <h2 className="text-lg font-semibold text-gray-900">Preview</h2>
       </div>
@@ -36,9 +36,9 @@ export function PreviewPane({ projectId }: { projectId: string }) {
               <h3 className="mt-4 text-lg font-medium text-gray-900">
                 App not running
               </h3>
-              <p className="mt-2 text-sm text-gray-600">
+              {/* <p className="mt-2 text-sm text-gray-600">
                 Deploy your project to see a preview
-              </p>
+              </p> */}
             </div>
           </div>
         )}
