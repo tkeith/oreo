@@ -41,6 +41,9 @@ ${context.projectFiles.map((f) => `- ${f}`).join("\n")}
 
   context.onStateUpdate?.();
 
+  // Track the number of messages before starting the generation
+  let previousReceivedMessageCount = 0;
+
   const result = await generateText({
     ...CLAUDE_CONFIG,
     stopWhen: stepCountIs(50),
@@ -86,8 +89,13 @@ ${context.projectFiles.map((f) => `- ${f}`).join("\n")}
       },
     },
     onStepFinish(stepResult) {
-      for (const message of stepResult.response.messages) {
+      // Only add new messages that weren't already in the array
+      const newMessages = stepResult.response.messages.slice(
+        previousReceivedMessageCount,
+      );
+      for (const message of newMessages) {
         messages.push(message);
+        previousReceivedMessageCount++;
       }
       context.onStateUpdate?.();
     },
