@@ -6,9 +6,18 @@ const createVmResponseSchema = z.object({
 });
 
 const execAwaitResponseSchema = z.object({
-  stdout: z.string(),
-  stderr: z.string(),
-  status_code: z.number().nullable().optional(),
+  stdout: z
+    .string()
+    .nullable()
+    .transform((val) => val ?? ""),
+  stderr: z
+    .string()
+    .nullable()
+    .transform((val) => val ?? ""),
+  statusCode: z
+    .number()
+    .nullable()
+    .transform((val) => val ?? 0),
 });
 
 export const createVm = async () => {
