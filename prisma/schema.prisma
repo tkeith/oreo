@@ -27,6 +27,7 @@ model Project {
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   vfs           String
+  chatHistory   String    @default("[]") // Serialized array of chat messages
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

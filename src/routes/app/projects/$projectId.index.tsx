@@ -124,6 +124,19 @@ function ProjectDetailPage() {
     }),
   );
 
+  // Clear chat history mutation
+  const clearChatMutation = useMutation(
+    trpc.projects.clearChatHistory.mutationOptions({
+      onSuccess: () => {
+        setMessages([]);
+      },
+      onError: (error) => {
+        console.error("Failed to clear chat history:", error);
+        alert(`Failed to clear chat history: ${error.message}`);
+      },
+    }),
+  );
+
   // Update selectedFileContent when fileContentData changes
   useEffect(() => {
     if (fileContentData) {
@@ -172,6 +185,15 @@ function ProjectDetailPage() {
       projectId,
       message,
     });
+  };
+
+  const handleClearChat = () => {
+    if (confirm("Are you sure you want to clear the chat history?")) {
+      void clearChatMutation.mutateAsync({
+        token: token ?? "",
+        projectId,
+      });
+    }
   };
 
   // Loading state
@@ -225,6 +247,7 @@ function ProjectDetailPage() {
           messages={messages}
           isLoading={isChatLoading}
           onSendMessage={handleSendMessage}
+          onClearChat={handleClearChat}
         />
 
         {/* Right Side - Preview or Filesystem (2/3) */}

@@ -1,37 +1,48 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import { generateText } from "ai";
+import { generateText, stepCountIs } from "ai";
 import { z } from "zod";
 import * as vfs from "~/server/utils/vfs";
 import { CLAUDE_CONFIG } from "./constants";
 
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
 interface AgentContext {
   projectVfs: vfs.VFS;
   projectFiles: string[];
+  chatHistory: ChatMessage[];
 }
 
 export async function runAgent(
   message: string,
   context: AgentContext,
-): Promise<{ response: string; updatedVfs: vfs.VFS }> {
-  const workingVfs = { ...context.projectVfs };
+): Promise<{ response: string }> {
+  const workingVfs = context.projectVfs;
 
-  const result = await generateText({
-    ...CLAUDE_CONFIG,
-    messages: [
-      {
-        role: "system",
-        content: `You are a helpful AI assistant for a code project. You can read and write files in the project.
+  // Build messages array with system prompt, chat history, and new message
+  const messages: ChatMessage[] = [
+    {
+      role: "system",
+      content: `You are a helpful AI assistant for a code project. You can read and write files in the project.
 
 Current project files:
 ${context.projectFiles.map((f) => `- ${f}`).join("\n")}
 
 When asked to make changes, be helpful and make the requested modifications to the files.`,
-      },
-      {
-        role: "user",
-        content: message,
-      },
-    ],
+    },
+    ...context.chatHistory, // Include the chat history
+    {
+      role: "user",
+      content: message,
+    },
+  ];
+
+  const result = await generateText({
+    ...CLAUDE_CONFIG,
+    stopWhen: stepCountIs(50),
+    messages,
     tools: {
       readFile: {
         description: "Read the contents of a file",
@@ -72,11 +83,9 @@ When asked to make changes, be helpful and make the requested modifications to t
         },
       },
     },
-    toolChoice: "auto",
   });
 
   return {
     response: result.text,
-    updatedVfs: workingVfs,
   };
 }

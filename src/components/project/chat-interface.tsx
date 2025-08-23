@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquareIcon, SendIcon } from "lucide-react";
+import { MessageSquareIcon, SendIcon, Trash2Icon } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -10,12 +10,14 @@ interface ChatInterfaceProps {
   messages: Message[];
   isLoading?: boolean;
   onSendMessage?: (message: string) => void;
+  onClearChat?: () => void;
 }
 
 export function ChatInterface({
   messages,
   isLoading,
   onSendMessage,
+  onClearChat,
 }: ChatInterfaceProps) {
   const [chatMessage, setChatMessage] = useState("");
 
@@ -29,9 +31,20 @@ export function ChatInterface({
   return (
     <div className="flex w-1/3 flex-col border-r border-gray-200 bg-white">
       {/* Chat Header */}
-      <div className="flex items-center border-b border-gray-200 px-4 py-3">
-        <MessageSquareIcon className="mr-2 h-4 w-4 text-gray-600" />
-        <h2 className="text-base font-semibold text-gray-900">Chat</h2>
+      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center">
+          <MessageSquareIcon className="mr-2 h-4 w-4 text-gray-600" />
+          <h2 className="text-base font-semibold text-gray-900">Chat</h2>
+        </div>
+        {messages.length > 0 && onClearChat && (
+          <button
+            onClick={onClearChat}
+            className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            title="Clear chat history"
+          >
+            <Trash2Icon className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Chat Messages Area */}
