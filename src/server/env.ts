@@ -10,6 +10,7 @@ const envSchema = z.object({
   JWT_TOKEN: z.string(),
   GOOGLE_CLIENT_ID: z.string(),
   GOOGLE_CLIENT_SECRET: z.string(),
+  FREESTYLE_API_URL: z.string().default("https://vm-api.freestyle.sh"),
 });
 
 export const env = envSchema.parse(process.env);

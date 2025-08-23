@@ -8,11 +8,13 @@ import { createVFSTools, filterFilesByPrefixes } from "./vfs-tools";
 import { runCodeGenerator } from "./codeGeneratorAgent";
 import { stepToEvents, type ChatEvent } from "~/types/chat";
 import { stripXmlTags } from "~/server/utils/strip-xml";
+import { deployToVm } from "./deploy-to-vm";
 
 interface AgentContext {
   projectVfs: vfs.VFS;
   projectFiles: string[];
   messages: ModelMessage[];
+  projectId?: string;
   onStateUpdate?: () => void;
   onEventEmit?: (events: ChatEvent[]) => void;
 }
@@ -93,7 +95,16 @@ ${filteredFiles.length > 0 ? filteredFiles.map((f) => `- ${f}`).join("\n") : "No
             onStateUpdate: context.onStateUpdate,
             onEventEmit: context.onEventEmit,
           });
-          // Note: We don't add code generator messages to chat history anymore
+
+          // Deploy after code generation
+          if (context.projectId) {
+            const deployResult = await deployToVm(
+              context.projectId,
+              workingVfs,
+            );
+            return `${result.response}\n\n${deployResult}`;
+          }
+
           return result.response;
         },
       },

@@ -30,6 +30,7 @@ model Project {
   chatHistory   String    @default("[]") // Serialized array of chat messages (chat agent only)
   agentEvents   String    @default("[]") // Serialized array of ChatEvent objects for UI display
   isProcessing  Boolean   @default(false) // Whether the agent is currently processing a request
+  vmId          String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

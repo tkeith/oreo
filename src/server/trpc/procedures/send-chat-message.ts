@@ -79,6 +79,7 @@ export const sendChatMessage = baseProcedure
           projectVfs: vfs,
           projectFiles: files,
           messages: chatHistory,
+          projectId: input.projectId,
           onStateUpdate: () => {
             db.project
               .update({

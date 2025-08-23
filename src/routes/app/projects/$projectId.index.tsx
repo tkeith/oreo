@@ -241,7 +241,7 @@ function ProjectDetailPage() {
         {/* Right Side - Preview or Filesystem (2/3) */}
         <div className="flex w-2/3 flex-col bg-white">
           {viewMode === "preview" ? (
-            <PreviewPane />
+            <PreviewPane projectId={projectId} />
           ) : (
             <FileSystemView
               files={vfsData?.fileTree ?? []}
