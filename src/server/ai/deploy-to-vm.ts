@@ -141,13 +141,27 @@ export async function deployToVm(
 
   while (Date.now() - startTime < timeout) {
     try {
-      const response = await fetch(`${url}/api/`, {
+      const apiResponse = await fetch(`${url}/api/`, {
+        method: "GET",
+        signal: AbortSignal.timeout(5000), // 5 second timeout for each request
+      });
+
+      const appResponse = await fetch(`${url}/`, {
         method: "GET",
         signal: AbortSignal.timeout(5000), // 5 second timeout for each request
       });
 
       // App is ready if status is anything other than 502 (Bad Gateway)
-      if (response.status !== 502) {
+      if (
+        (apiResponse.status >= 200 && apiResponse.status < 300) ||
+        (apiResponse.status >= 300 && apiResponse.status < 400) ||
+        (apiResponse.status >= 400 &&
+          apiResponse.status < 500 &&
+          appResponse.status >= 200 &&
+          appResponse.status < 300) ||
+        (appResponse.status >= 300 && appResponse.status < 400) ||
+        (appResponse.status >= 400 && appResponse.status < 500)
+      ) {
         appReady = true;
         await emit("✅ App is ready!");
         break;
