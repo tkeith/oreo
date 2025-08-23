@@ -8,6 +8,7 @@ import {
   ChevronRightIcon,
 } from "lucide-react";
 import { useState } from "react";
+import Markdown from "markdown-to-jsx";
 import {
   ExtendedModelMessage,
   getTextContent,
@@ -46,9 +47,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
         </div>
         <div className="flex-1">
           <div className="rounded-lg bg-gray-200 p-2">
-            <p className="whitespace-pre-wrap text-sm text-gray-700">
-              {content}
-            </p>
+            <article className="prose prose-sm max-w-none text-gray-700 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1">
+              <Markdown>{content}</Markdown>
+            </article>
           </div>
         </div>
       </div>
@@ -164,9 +165,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
           {/* Main message content */}
           {textContent && (
             <div className="rounded-lg bg-gray-100 p-2">
-              <p className="whitespace-pre-wrap text-sm text-gray-700">
-                {textContent}
-              </p>
+              <article className="prose prose-sm max-w-none text-gray-700 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1">
+                <Markdown>{textContent}</Markdown>
+              </article>
             </div>
           )}
         </div>
@@ -183,7 +184,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
         </div>
         <div className="flex-1">
           <div className="rounded-lg bg-gray-50 p-2">
-            <p className="text-xs text-gray-600">{message.content}</p>
+            <article className="prose-xs prose max-w-none text-gray-600 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1">
+              <Markdown>{message.content || ""}</Markdown>
+            </article>
           </div>
         </div>
       </div>
