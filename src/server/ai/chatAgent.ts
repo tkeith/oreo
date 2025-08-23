@@ -1,14 +1,13 @@
 import { generateText, ModelMessage, stepCountIs } from "ai";
-import { z } from "zod";
+import { createHash } from "crypto";
+import stringify from "json-stable-stringify";
 import * as vfs from "~/server/utils/vfs";
 import { CLAUDE_CONFIG } from "./constants";
 import { updateMessagesForCaching } from "./utils/anthropic-prompt-caching";
 import { getChatSystemPrompt } from "./prompts/chat-system-prompt";
 import { createVFSTools, filterFilesByPrefixes } from "./vfs-tools";
-import { runCodeGenerator } from "./codeGeneratorAgent";
 import { stepToEvents, type ChatEvent } from "~/types/chat";
 import { stripXmlTags } from "~/server/utils/strip-xml";
-import { deployToVm } from "./deploy-to-vm";
 
 interface AgentContext {
   projectVfs: vfs.VFS;
@@ -19,12 +18,34 @@ interface AgentContext {
   onEventEmit?: (events: ChatEvent[]) => void;
 }
 
+// Helper to get hash of spec files
+function getSpecHash(workingVfs: vfs.VFS): string {
+  const specFiles = vfs
+    .listFiles(workingVfs)
+    .filter((f) => f.startsWith("spec/"));
+  const specContents: Record<string, string> = {};
+
+  for (const file of specFiles.sort()) {
+    const content = vfs.readFile(workingVfs, file);
+    if (content !== undefined) {
+      specContents[file] = content;
+    }
+  }
+
+  return createHash("sha256")
+    .update(stringify(specContents) ?? "{}")
+    .digest("hex");
+}
+
 export async function runAgent(
   message: string,
   context: AgentContext,
-): Promise<{ response: string }> {
+): Promise<{ response: string; specModified: boolean }> {
   const workingVfs = context.projectVfs;
   const allowedPrefixes = ["spec/"];
+
+  // Get spec hash before running agent
+  const specHashBefore = getSpecHash(workingVfs);
 
   const messages = context.messages;
 
@@ -73,42 +94,7 @@ ${filteredFiles.length > 0 ? filteredFiles.map((f) => `- ${f}`).join("\n") : "No
     ...CLAUDE_CONFIG,
     stopWhen: stepCountIs(50),
     messages,
-    tools: {
-      ...createVFSTools(workingVfs, allowedPrefixes),
-      runCodeGenerator: {
-        description:
-          "Run the code generator agent to update code based on the spec. Do not call this multiple times in a row, it should be called only once (at most) per request by the user.",
-        inputSchema: z.object({}),
-        execute: async () => {
-          // Emit an event when code generation starts
-          const timestamp = Date.now();
-          const startEvent: ChatEvent = {
-            eventType: "toolCall",
-            markdown: `**runCodeGenerator**`,
-            timestamp,
-            agent: "chat",
-          };
-          context.onEventEmit?.([startEvent]);
-
-          const result = await runCodeGenerator({
-            projectVfs: workingVfs,
-            onStateUpdate: context.onStateUpdate,
-            onEventEmit: context.onEventEmit,
-          });
-
-          // Deploy after code generation
-          if (context.projectId) {
-            const deployResult = await deployToVm(
-              context.projectId,
-              workingVfs,
-            );
-            return `${result.response}\n\n${deployResult}`;
-          }
-
-          return result.response;
-        },
-      },
-    },
+    tools: createVFSTools(workingVfs, allowedPrefixes),
     onStepFinish(stepResult) {
       // Only add new messages that weren't already in the array
       const newMessages = stepResult.response.messages.slice(
@@ -135,7 +121,12 @@ ${filteredFiles.length > 0 ? filteredFiles.map((f) => `- ${f}`).join("\n") : "No
     },
   });
 
+  // Check if spec was modified by comparing hashes
+  const specHashAfter = getSpecHash(workingVfs);
+  const specModified = specHashBefore !== specHashAfter;
+
   return {
     response: result.text,
+    specModified,
   };
 }

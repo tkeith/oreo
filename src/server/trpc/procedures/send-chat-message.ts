@@ -4,6 +4,8 @@ import { verifyToken } from "~/server/auth";
 import { db } from "~/server/db";
 import { deserialize, serialize, listFiles } from "~/server/utils/vfs";
 import { runAgent } from "~/server/ai/chatAgent";
+import { runCodeGenerator } from "~/server/ai/codeGeneratorAgent";
+import { deployToVm } from "~/server/ai/deploy-to-vm";
 import { ModelMessage } from "ai";
 import type { ChatEvent } from "~/types/chat";
 
@@ -75,7 +77,7 @@ export const sendChatMessage = baseProcedure
         }
 
         // Run the AI agent with chat history
-        await runAgent(input.message, {
+        const agentResult = await runAgent(input.message, {
           projectVfs: vfs,
           projectFiles: files,
           messages: chatHistory,
@@ -110,6 +112,85 @@ export const sendChatMessage = baseProcedure
               });
           },
         });
+
+        // If spec was modified, run code generator automatically
+        if (agentResult.specModified) {
+          agentEvents.push({
+            eventType: "toolCall",
+            markdown: `**Running code generator**`,
+            timestamp: Date.now(),
+            agent: "chat",
+          });
+
+          const { response: codeGeneratorResponse } = await runCodeGenerator({
+            projectVfs: vfs,
+            onStateUpdate: () => {
+              db.project
+                .update({
+                  where: { id: input.projectId },
+                  data: {
+                    vfs: serialize(vfs),
+                  },
+                })
+                .catch((error) => {
+                  console.error("Failed to update project:", error);
+                });
+            },
+            onEventEmit: (events) => {
+              agentEvents.push(...events);
+              db.project
+                .update({
+                  where: { id: input.projectId },
+                  data: {
+                    agentEvents: JSON.stringify(agentEvents),
+                  },
+                })
+                .catch((error) => {
+                  console.error("Failed to update agent events:", error);
+                });
+            },
+          });
+
+          agentEvents.push({
+            eventType: "toolResult",
+            markdown: codeGeneratorResponse,
+            timestamp: Date.now(),
+            agent: "chat",
+          });
+
+          // Deploy after code generation
+          agentEvents.push({
+            eventType: "toolCall",
+            markdown: `**Starting deployment to VM**`,
+            timestamp: Date.now(),
+            agent: "chat",
+          });
+
+          // Update events before deployment
+          await db.project.update({
+            where: { id: input.projectId },
+            data: {
+              agentEvents: JSON.stringify(agentEvents),
+            },
+          });
+
+          const deployResult = await deployToVm(input.projectId, vfs);
+
+          agentEvents.push({
+            eventType: "toolResult",
+            markdown: deployResult,
+            timestamp: Date.now(),
+            agent: "chat",
+          });
+
+          // Update events after deployment
+          await db.project.update({
+            where: { id: input.projectId },
+            data: {
+              agentEvents: JSON.stringify(agentEvents),
+            },
+          });
+        }
 
         // Clear processing flag when done
         await db.project.update({
