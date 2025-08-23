@@ -3,7 +3,7 @@ import { baseProcedure } from "~/server/trpc/main";
 import { verifyToken } from "~/server/auth";
 import { db } from "~/server/db";
 import { deserialize, serialize, listFiles } from "~/server/utils/vfs";
-import { runAgent } from "~/server/ai/agent";
+import { runAgent } from "~/server/ai/chatAgent";
 import { ModelMessage } from "ai";
 
 export const sendChatMessage = baseProcedure

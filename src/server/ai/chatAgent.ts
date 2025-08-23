@@ -3,7 +3,9 @@ import { z } from "zod";
 import * as vfs from "~/server/utils/vfs";
 import { CLAUDE_CONFIG } from "./constants";
 import { updateMessagesForCaching } from "./utils/anthropic-prompt-caching";
-import { getBuilderSystemPrompt } from "./prompts/builder-system-prompt";
+import { getChatSystemPrompt } from "./prompts/chat-system-prompt";
+import { createVFSTools } from "./vfs-tools";
+import { runCodeGenerator } from "./codeGeneratorAgent";
 
 interface AgentContext {
   projectVfs: vfs.VFS;
@@ -23,7 +25,7 @@ export async function runAgent(
   if (messages.length === 0) {
     messages.push({
       role: "system",
-      content: getBuilderSystemPrompt(),
+      content: getChatSystemPrompt(),
     });
   }
 
@@ -51,42 +53,25 @@ ${context.projectFiles.map((f) => `- ${f}`).join("\n")}
     stopWhen: stepCountIs(50),
     messages,
     tools: {
-      readFile: {
-        description: "Read the contents of a file",
+      ...createVFSTools(workingVfs, ["/spec"]),
+      runCodeGenerator: {
+        description:
+          "Run the code generator agent to generate code based on an instruction",
         inputSchema: z.object({
-          path: z.string().describe("The file path to read"),
+          instruction: z
+            .string()
+            .describe("The instruction for the code generator"),
         }),
-        execute: async ({ path }: { path: string }) => {
-          const content = vfs.readFile(workingVfs, path);
-          if (content === undefined) {
-            return `File not found: ${path}`;
+        execute: async ({ instruction }: { instruction: string }) => {
+          const result = await runCodeGenerator({
+            projectVfs: workingVfs,
+            instruction,
+          });
+          // Add code generator messages to chat history
+          for (const msg of result.messages) {
+            messages.push(msg);
           }
-          return content;
-        },
-      },
-      writeFile: {
-        description: "Write or update a file",
-        inputSchema: z.object({
-          path: z.string().describe("The file path to write"),
-          content: z.string().describe("The content to write to the file"),
-        }),
-        execute: async ({
-          path,
-          content,
-        }: {
-          path: string;
-          content: string;
-        }) => {
-          vfs.writeFile(workingVfs, path, content);
-          return `File written: ${path}`;
-        },
-      },
-      listFiles: {
-        description: "List all files in the project",
-        inputSchema: z.object({}),
-        execute: async () => {
-          const files = vfs.listFiles(workingVfs);
-          return files.join("\n");
+          return result.response;
         },
       },
     },
