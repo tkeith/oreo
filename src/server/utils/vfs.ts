@@ -17,6 +17,15 @@ export function createVFS(): VFS {
 }
 
 /**
+ * Creates a VFS from a template object (filesContents mapping)
+ */
+export function createVFSFromTemplate(template: Record<string, string>): VFS {
+  return {
+    filesContents: { ...template },
+  };
+}
+
+/**
  * Reads a file from the VFS
  * @returns The file content or undefined if the file doesn't exist
  */
