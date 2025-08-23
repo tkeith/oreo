@@ -1,28 +1,26 @@
 import { db } from "~/server/db";
-import { createVm, execAwait } from "~/server/freestyle-api";
+import { execAwait } from "~/server/freestyle-api";
 import * as vfs from "~/server/utils/vfs";
 
 export async function deployToVm(
   projectId: string,
   projectVfs: vfs.VFS,
 ): Promise<string> {
-  const project = await db.project.findUnique({
-    where: { id: projectId },
-  });
+  // Wait for VM to be ready (max 120 seconds)
+  let project = await db.project.findUnique({ where: { id: projectId } });
   if (!project) return "Project not found";
 
-  let vmId = project.vmId;
-
-  if (!vmId) {
-    const vm = await createVm();
-    vmId = vm.id;
-    await db.project.update({
-      where: { id: projectId },
-      data: { vmId },
-    });
+  const maxWait = 120;
+  for (let i = 0; i < maxWait && project?.vmStatus === "creating"; i++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    project = await db.project.findUnique({ where: { id: projectId } });
   }
 
-  if (!vmId) return "Failed to create VM";
+  if (project?.vmStatus === "failed" || !project?.vmId) {
+    return "VM creation failed";
+  }
+
+  const vmId = project.vmId;
 
   await execAwait(vmId, "pkill -f 'npm run dev' || true");
   await execAwait(vmId, "pkill -f 'socat' || true");
@@ -39,10 +37,7 @@ export async function deployToVm(
   }
 
   await execAwait(vmId, script);
-  await execAwait(
-    vmId,
-    "cd /app && apt update && apt install --yes socat && npm i -g pnpm && pnpm install",
-  );
+  await execAwait(vmId, "cd /app && pnpm install");
   await execAwait(vmId, "cd /app && CONVEX_AGENT_MODE=anonymous pnpm dev &");
   await execAwait(vmId, "socat TCP-LISTEN:3000,fork TCP:localhost:5173 &");
 

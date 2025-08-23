@@ -29,3 +29,8 @@ export const execAwait = async (vmId: string, command: string) => {
   });
   return execAwaitResponseSchema.parse(await res.json());
 };
+
+export const setupVm = async (vmId: string) => {
+  await execAwait(vmId, "apt update && apt install --yes socat");
+  await execAwait(vmId, "npm i -g pnpm");
+};

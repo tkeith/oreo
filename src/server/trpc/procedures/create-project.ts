@@ -3,6 +3,7 @@ import { baseProcedure } from "~/server/trpc/main";
 import { verifyToken } from "~/server/auth";
 import { db } from "~/server/db";
 import { createVFSFromTemplate, serialize } from "~/server/utils/vfs";
+import { createVm, setupVm } from "~/server/freestyle-api";
 import fs from "fs";
 import path from "path";
 
@@ -41,6 +42,27 @@ export const createProject = baseProcedure
         vfs: serializedVFS,
       },
     });
+
+    // Start VM creation in background
+    void (async () => {
+      try {
+        await db.project.update({
+          where: { id: project.id },
+          data: { vmStatus: "creating" },
+        });
+        const vm = await createVm();
+        await setupVm(vm.id);
+        await db.project.update({
+          where: { id: project.id },
+          data: { vmId: vm.id, vmStatus: "ready" },
+        });
+      } catch {
+        await db.project.update({
+          where: { id: project.id },
+          data: { vmStatus: "failed" },
+        });
+      }
+    })();
 
     return project;
   });
