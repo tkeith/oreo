@@ -79,11 +79,17 @@ export function contentPartToEvent(
         markdown: item.text,
       };
 
-    case "tool-call":
+    case "tool-call": {
+      // Escape triple backticks in the JSON content
+      const jsonContent = JSON.stringify(item.input, null, 2).replace(
+        /```/g,
+        "\\`\\`\\`",
+      );
       return {
         eventType: "toolCall",
-        markdown: `**${item.toolName}**\n\`\`\`json\n${JSON.stringify(item.input, null, 2)}\n\`\`\``,
+        markdown: `**${item.toolName}**\n\`\`\`json\n${jsonContent}\n\`\`\``,
       };
+    }
 
     case "tool-result": {
       const outputData = item.output as
@@ -95,8 +101,12 @@ export function contentPartToEvent(
         typeof outputData === "object" && outputData && "value" in outputData
           ? outputData.value
           : outputData;
-      const formatted =
+      let formatted =
         typeof output === "string" ? output : JSON.stringify(output, null, 2);
+
+      // Escape triple backticks in the output content
+      formatted = formatted.replace(/```/g, "\\`\\`\\`");
+
       return {
         eventType: "toolResult",
         markdown: `**${item.toolName}**\n\`\`\`\n${formatted}\n\`\`\``,

@@ -3,6 +3,7 @@ import { z } from "zod";
 import * as vfs from "~/server/utils/vfs";
 import { CLAUDE_CONFIG } from "./constants";
 import { updateMessagesForCaching } from "./utils/anthropic-prompt-caching";
+import { getBuilderSystemPrompt } from "./prompts/builder-system-prompt";
 
 interface AgentContext {
   projectVfs: vfs.VFS;
@@ -22,9 +23,7 @@ export async function runAgent(
   if (messages.length === 0) {
     messages.push({
       role: "system",
-      content: `You are a helpful AI assistant for a code project. You can read and write files in the project.
-
-When asked to make changes, be helpful and make the requested modifications to the files.`,
+      content: getBuilderSystemPrompt(),
     });
   }
 

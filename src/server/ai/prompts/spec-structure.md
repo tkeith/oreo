@@ -4,15 +4,14 @@ Our application is defined by a specification, which is a collection of markdown
 
 # Specification directory structure
 
-- components
-  - helper/helper-component-name.md
-  - pages/page-name.md
-- api/endpoint-name.md
-- database-schema.md
+- spec/components/some-component.md
+- spec/components/app.md (this is the main app page)
+- spec/api/endpoint-name.md
+- spec/database-schema.md
 
 # Components
 
-Pages and helper components represent visual interfaces. Describe in detail their structure, layout, and styling. Additionally, interactions should be defined, and can lead to API calls or other state changes.
+Components represent visual interfaces. Describe in detail their structure, layout, and styling. Additionally, interactions should be defined, and can lead to API calls or other state changes.
 
 # API
 
@@ -26,4 +25,4 @@ Table: SomeTableName (must be ClassCase)
 
 - Column: id (primary key, integer, auto increment)
 - Column: name (string)
-  ...
+- ...
