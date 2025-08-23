@@ -10,14 +10,14 @@ export function Footer({ className = "" }: FooterProps) {
       <div className="mx-auto max-w-6xl px-6">
         <div className="flex flex-col items-center justify-between space-y-4 sm:flex-row sm:space-y-0">
           <div className="text-sm text-gray-500">
-            © 2025 Oreo. All rights reserved.
+            Built at the YC Agents Hackathon by @tsrkeith and @rileyshu_rs
           </div>
           <nav className="flex items-center space-x-6">
             <a
-              href="mailto:contact@example.com"
+              href="mailto:trevor@codapt.ai"
               className="text-sm text-gray-500 transition-colors hover:text-gray-900"
             >
-              Contact
+              Email us
             </a>
           </nav>
         </div>
