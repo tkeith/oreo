@@ -22,6 +22,8 @@ export async function deployToVm(
 
   const vmId = project.vmId;
 
+  // Kill existing processes and screen sessions
+  await execAwait(vmId, "screen -S convex-dev -X quit || true");
   await execAwait(vmId, "pkill -f 'pnpm dev' || true");
   await execAwait(vmId, "pkill -f 'node' || true");
   await execAwait(vmId, "pkill -f 'convex' || true");
@@ -40,7 +42,11 @@ export async function deployToVm(
 
   await execAwait(vmId, script);
   await execAwait(vmId, "cd /app && pnpm install");
-  await execAwait(vmId, "cd /app && CONVEX_AGENT_MODE=anonymous pnpm dev &");
+  // Run pnpm dev inside a detached screen session to provide TTY
+  await execAwait(
+    vmId,
+    "screen -dmS convex-dev bash -c 'cd /app && CONVEX_AGENT_MODE=anonymous pnpm dev'",
+  );
   // await execAwait(vmId, "socat TCP-LISTEN:3000,fork TCP:localhost:5173 &");
 
   return `Deployed to https://${vmId}.vm.freestyle.sh`;
