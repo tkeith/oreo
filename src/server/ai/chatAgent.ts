@@ -77,7 +77,7 @@ ${filteredFiles.length > 0 ? filteredFiles.map((f) => `- ${f}`).join("\n") : "No
       ...createVFSTools(workingVfs, allowedPrefixes),
       runCodeGenerator: {
         description:
-          "Run the code generator agent to update code based on the spec",
+          "Run the code generator agent to update code based on the spec. Do not call this multiple times in a row, it should be called only once (at most) per request by the user.",
         inputSchema: z.object({}),
         execute: async () => {
           // Emit an event when code generation starts
@@ -92,6 +92,7 @@ ${filteredFiles.length > 0 ? filteredFiles.map((f) => `- ${f}`).join("\n") : "No
 
           const result = await runCodeGenerator({
             projectVfs: workingVfs,
+            onStateUpdate: context.onStateUpdate,
             onEventEmit: context.onEventEmit,
           });
           // Note: We don't add code generator messages to chat history anymore

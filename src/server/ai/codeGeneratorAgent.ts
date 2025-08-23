@@ -8,6 +8,7 @@ import { stepToEvents, type ChatEvent } from "~/types/chat";
 
 interface CodeGeneratorContext {
   projectVfs: vfs.VFS;
+  onStateUpdate?: () => void;
   onEventEmit?: (events: ChatEvent[]) => void;
 }
 
@@ -39,6 +40,8 @@ export async function runCodeGenerator(
       if (events.length > 0) {
         context.onEventEmit?.(events);
       }
+      // Trigger database update after each step
+      context.onStateUpdate?.();
     },
   });
 
