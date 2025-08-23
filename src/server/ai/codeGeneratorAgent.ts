@@ -3,6 +3,7 @@ import * as vfs from "~/server/utils/vfs";
 import { CLAUDE_CONFIG } from "./constants";
 import { updateMessagesForCaching } from "./utils/anthropic-prompt-caching";
 import { createVFSTools } from "./vfs-tools";
+import { getCodeGeneratorSystemPrompt } from "./prompts/code-generator-system-prompt";
 
 interface CodeGeneratorContext {
   projectVfs: vfs.VFS;
@@ -15,8 +16,7 @@ export async function runCodeGenerator(
   const messages: ModelMessage[] = [
     {
       role: "system",
-      content: `You are a code generator agent. Generate code based on the instruction provided.
-[PLACEHOLDER: This system prompt will be replaced with detailed instructions]`,
+      content: getCodeGeneratorSystemPrompt(),
     },
     {
       role: "user",
