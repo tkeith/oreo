@@ -22,7 +22,7 @@ export async function runAgent(
   context: AgentContext,
 ): Promise<{ response: string }> {
   const workingVfs = context.projectVfs;
-  const allowedPrefixes = ["/spec"];
+  const allowedPrefixes = ["spec/"];
 
   const messages = context.messages;
 
@@ -84,6 +84,16 @@ ${filteredFiles.length > 0 ? filteredFiles.map((f) => `- ${f}`).join("\n") : "No
             .describe("The instruction for the code generator"),
         }),
         execute: async ({ instruction }: { instruction: string }) => {
+          // Emit an event when code generation starts
+          const timestamp = Date.now();
+          const startEvent: ChatEvent = {
+            eventType: "toolCall",
+            markdown: `**runCodeGenerator**\n\`\`\`json\n${JSON.stringify({ instruction }, null, 2)}\n\`\`\``,
+            timestamp,
+            agent: "chat",
+          };
+          context.onEventEmit?.([startEvent]);
+
           const result = await runCodeGenerator({
             projectVfs: workingVfs,
             onEventEmit: context.onEventEmit,
