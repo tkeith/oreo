@@ -122,14 +122,14 @@ async function deployWithVerification(
 
     if (verifyAttempts >= maxVerifyAttempts) {
       await eventHandler(
-        `⚠️ Code verification failed after ${maxVerifyAttempts} attempts. Continuing with deployment...`,
+        `Code verification failed after ${maxVerifyAttempts} attempts. Continuing with deployment...`,
       );
       break;
     }
 
     // Fix linting errors
     await eventHandler(
-      `🔧 Attempting to fix linting errors (attempt ${verifyAttempts}/${maxVerifyAttempts})...`,
+      `Attempting to fix linting errors (attempt ${verifyAttempts}/${maxVerifyAttempts})...`,
     );
 
     const fixedCode = await fixLintingErrors(
@@ -140,9 +140,7 @@ async function deployWithVerification(
     );
 
     if (!fixedCode) {
-      await eventHandler(
-        "⚠️ Unable to fix errors. Continuing with deployment...",
-      );
+      await eventHandler("Unable to fix errors. Continuing with deployment...");
       break;
     }
 

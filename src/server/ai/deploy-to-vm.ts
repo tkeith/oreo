@@ -28,7 +28,7 @@ export async function stopAndCopyCode(
 ): Promise<void> {
   const emit = async (msg: string) => options?.onEvent?.(msg);
 
-  await emit("🔄 Cleaning up...");
+  await emit("Cleaning up...");
   for (const cmd of [
     "screen -S convex-dev -X quit || true",
     "pkill -f 'pnpm dev' || true",
@@ -40,7 +40,7 @@ export async function stopAndCopyCode(
 
   // Upload files
   const files = vfs.listFiles(projectVfs).filter((f) => f.startsWith("code/"));
-  await emit(`📤 Uploading ${files.length} files...`);
+  await emit(`Uploading ${files.length} files...`);
 
   let script = "#!/bin/bash\nmkdir -p /app\n";
   for (const file of files) {
@@ -61,7 +61,7 @@ export async function stopAndCopyCode(
   await execAwait(vmId, script);
 
   // Configure nginx
-  await emit("🔧 Configuring nginx...");
+  await emit("Configuring nginx...");
   const proxySettings = `
         absolute_redirect off;
         chunked_transfer_encoding off;
@@ -107,8 +107,8 @@ export async function runSetup(
 
   await emit(
     options?.isInitialDeployment
-      ? "📦 Installing dependencies (first time, this will speed up future deployments)..."
-      : "📦 Installing dependencies...",
+      ? "Installing dependencies (first time, this will speed up future deployments)..."
+      : "Installing dependencies...",
   );
 
   await execAwait(vmId, "cd /app && pnpm install && pnpm convex codegen");
@@ -121,16 +121,14 @@ export async function verifyCode(
 ): Promise<VerifyResult> {
   const emit = async (msg: string) => options?.onEvent?.(msg);
 
-  await emit("🔍 Verifying code...");
+  await emit("Verifying code...");
   const result = await execAwait(vmId, "cd /app && pnpm lint");
 
   const success = result.statusCode === 0;
   if (success) {
-    await emit("✅ Code verification passed!");
+    await emit("Code verification passed!");
   } else {
-    await emit(
-      `⚠️ Code verification failed with exit code ${result.statusCode}`,
-    );
+    await emit(`Code verification failed with exit code ${result.statusCode}`);
   }
 
   return {
@@ -156,7 +154,7 @@ export async function launchApp(
   const url = `https://${vmId}.vm.freestyle.sh`;
 
   // Wait for app to be ready (up to 1 minute)
-  await emit("⏳ Waiting for app to start...");
+  await emit("Waiting for app to start...");
   const startTime = Date.now();
   const timeout = 60 * 1000; // 1 minute
   let appReady = false;
@@ -184,7 +182,7 @@ export async function launchApp(
         (appResponse.status >= 400 && appResponse.status < 500)
       ) {
         appReady = true;
-        await emit("✅ App is ready!");
+        await emit("App is ready!");
         break;
       }
     } catch (error) {
@@ -195,11 +193,11 @@ export async function launchApp(
   }
 
   if (!appReady) {
-    await emit("⚠️ App startup timed out after 1 minute (continuing anyway)");
+    await emit("App startup timed out after 1 minute (continuing anyway)");
   }
 
   await emit(
-    `✨ ${options?.isInitialDeployment ? "VM warmed up" : "Deployment complete"}!`,
+    `${options?.isInitialDeployment ? "VM warmed up" : "Deployment complete"}!`,
   );
   return url;
 }
@@ -220,13 +218,13 @@ export async function deployToVm(
 
   // Wait for VM readiness (skip if this IS the warm-up)
   if (!isInitialDeployment) {
-    await emit("🔄 Checking VM status...");
+    await emit("Checking VM status...");
     for (
       let i = 0;
       i < 120 && ["creating", "warming_up"].includes(project?.vmStatus || "");
       i++
     ) {
-      if (i % 10 === 0) await emit(`⏳ Waiting for VM... (${i}s elapsed)`);
+      if (i % 10 === 0) await emit(`Waiting for VM... (${i}s elapsed)`);
       await new Promise((r) => setTimeout(r, 1000));
       project = await db.project.findUnique({ where: { id: projectId } });
     }
@@ -236,7 +234,7 @@ export async function deployToVm(
     return "VM creation failed";
 
   const vmId = project.vmId;
-  await emit(`✅ VM ready: ${vmId}`);
+  await emit(`VM ready: ${vmId}`);
 
   // Use helper functions
   await stopAndCopyCode(vmId, projectVfs, { onEvent });
