@@ -76,9 +76,9 @@ export function CreateFileModal({
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <div className="sm:flex sm:items-start">
-                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 sm:mx-0 sm:h-10 sm:w-10">
                       <FileIcon
-                        className="h-6 w-6 text-indigo-600"
+                        className="h-6 w-6 text-gray-600"
                         aria-hidden="true"
                       />
                     </div>
@@ -104,7 +104,7 @@ export function CreateFileModal({
                               value={fileName}
                               onChange={(e) => setFileName(e.target.value)}
                               placeholder="e.g., index.html, main.js, styles.css"
-                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
                               autoFocus
                             />
                           </div>
@@ -129,7 +129,7 @@ export function CreateFileModal({
                               value={fileContent}
                               onChange={(e) => setFileContent(e.target.value)}
                               placeholder="Enter initial file content..."
-                              className="block w-full rounded-md border-gray-300 font-mono text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="block w-full rounded-md border-gray-300 font-mono text-xs shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
                             />
                           </div>
                         </div>
@@ -142,7 +142,7 @@ export function CreateFileModal({
                     type="button"
                     disabled={!fileName.trim() || isCreating}
                     onClick={() => void handleCreate()}
-                    className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-3 sm:w-auto"
+                    className="inline-flex w-full justify-center rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-3 sm:w-auto"
                   >
                     {isCreating ? "Creating..." : "Create File"}
                   </button>

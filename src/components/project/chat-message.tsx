@@ -10,7 +10,7 @@ export function ChatMessage({ event }: ChatMessageProps) {
   const contentStyles = {
     userMessage: "bg-blue-600 text-white",
     aiMessage: "bg-gray-100 text-gray-700",
-    aiReasoning: "bg-purple-50 text-purple-700 italic",
+    aiReasoning: "bg-gray-100 text-gray-700 italic",
     toolCall: "bg-blue-50 text-blue-900",
     toolResult: "bg-green-50 text-green-900",
   };

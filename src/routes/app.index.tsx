@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useTRPC } from "~/trpc/react";
 import { useAuthStore } from "~/stores/auth-store";
+import { CreateProjectModal } from "~/components/create-project-modal";
 
 export const Route = createFileRoute("/app/")({
   component: AppHomePage,
@@ -13,8 +14,7 @@ function AppHomePage() {
   const navigate = useNavigate();
   const trpc = useTRPC();
   const token = useAuthStore((state) => state.token);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [projectName, setProjectName] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Fetch projects
   const {
@@ -32,8 +32,7 @@ function AppHomePage() {
   const createProjectMutation = useMutation(
     trpc.projects.create.mutationOptions({
       onSuccess: () => {
-        setShowCreateForm(false);
-        setProjectName("");
+        setShowCreateModal(false);
         void refetch();
       },
       onError: (error) => {
@@ -42,7 +41,7 @@ function AppHomePage() {
     }),
   );
 
-  const handleCreateProject = () => {
+  const handleCreateProject = (projectName: string) => {
     if (!token || !projectName.trim()) return;
 
     createProjectMutation.mutate({
@@ -76,62 +75,22 @@ function AppHomePage() {
 
         {/* Create Project Button */}
         <div className="mb-6">
-          {!showCreateForm ? (
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              <PlusIcon className="mr-2 h-5 w-5" />
-              New Project
-            </button>
-          ) : (
-            <div className="rounded-lg bg-white p-6 shadow">
-              <h3 className="mb-4 text-lg font-medium text-gray-900">
-                Create New Project
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="project-name"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Project Name
-                  </label>
-                  <input
-                    type="text"
-                    id="project-name"
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Enter project name"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleCreateProject}
-                    disabled={
-                      !projectName.trim() || createProjectMutation.isPending
-                    }
-                    className="inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {createProjectMutation.isPending
-                      ? "Creating..."
-                      : "Create Project"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowCreateForm(false);
-                      setProjectName("");
-                    }}
-                    className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+          >
+            <PlusIcon className="mr-2 h-5 w-5" />
+            New Project
+          </button>
         </div>
+
+        {/* Create Project Modal */}
+        <CreateProjectModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onConfirm={handleCreateProject}
+          isCreating={createProjectMutation.isPending}
+        />
 
         {/* Projects Grid */}
         {projects && projects.length > 0 ? (

@@ -155,7 +155,7 @@ export function FileSystemView({
                   <textarea
                     value={editingContent}
                     onChange={(e) => setEditingContent(e.target.value)}
-                    className="h-full w-full rounded-lg border border-gray-300 bg-gray-900 p-4 font-mono text-sm text-gray-300 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="h-full w-full rounded-lg border border-gray-300 bg-gray-900 p-4 font-mono text-sm text-gray-300 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
                     style={{ minHeight: "400px" }}
                   />
                 ) : (
